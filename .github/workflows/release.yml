@@ -49,10 +49,15 @@ jobs:
       - name: 📤 Upload release assets
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ env.VERSION }}
           files: |
             dist/fancy-tar-${{ env.VERSION }}.tar.gz
             dist/sha256.txt
             dist/*.rpm
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
+          generate_release_notes: false
 
       - name: 🧹 Cleanup
         run: rm -rf build
