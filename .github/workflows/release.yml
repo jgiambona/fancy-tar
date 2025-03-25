@@ -16,14 +16,19 @@ jobs:
       - name: 🏷 Set version from tag
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: 📁 Create dist folder
-        run: mkdir -p dist
-
-      - name: 📦 Create source tarball (with versioned folder)
+      - name: 📁 Create dist and build folders
         run: |
-          mkdir -p build/fancy-tar-${VERSION}
+          mkdir -p dist build/fancy-tar-${VERSION}
           cp -r scripts docs completions install.sh README.md fancy-tar.spec build/fancy-tar-${VERSION}/
+
+      - name: 📦 Create versioned tarball
+        run: |
           tar czvf dist/fancy-tar-${VERSION}.tar.gz -C build fancy-tar-${VERSION}
+
+      - name: 🧮 Generate SHA256 checksum
+        run: |
+          cd dist
+          sha256sum fancy-tar-${VERSION}.tar.gz > sha256.txt
 
       - name: 🔁 Inject version into RPM spec
         run: |
@@ -46,6 +51,7 @@ jobs:
         with:
           files: |
             dist/fancy-tar-${{ env.VERSION }}.tar.gz
+            dist/sha256.txt
             dist/*.rpm
 
       - name: 🧹 Cleanup
