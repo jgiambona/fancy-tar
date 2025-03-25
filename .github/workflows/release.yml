@@ -49,15 +49,23 @@ jobs:
       - name: 🛠 Install GitHub CLI
         run: sudo apt-get install -y gh
 
+      - name: 🛠 Ensure GitHub release exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v$VERSION"
+          gh release view "$TAG" || gh release create "$TAG" --title "fancy-tar $TAG" --notes "Automated release for fancy-tar"
+
       - name: 📤 Upload release assets using GitHub CLI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v${VERSION} \
-          dist/fancy-tar-${VERSION}.tar.gz \
-          dist/sha256.txt \
-          dist/*.rpm \
-          --clobber
+          TAG="v$VERSION"
+          gh release upload "$TAG" \
+            dist/fancy-tar-${VERSION}.tar.gz \
+            dist/sha256.txt \
+            dist/*.rpm \
+            --clobber
 
       - name: 🧹 Cleanup
         run: rm -rf build
