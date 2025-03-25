@@ -1,4 +1,4 @@
-name: Package & Release
+name: Build & Release
 
 on:
   push:
@@ -10,32 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: 📦 Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set version from tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: 🏷 Set version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Create tarball
+      - name: 📁 Create dist folder
+        run: mkdir -p dist
+
+      - name: 📦 Create source tarball
         run: |
-          mkdir dist
-          tar czvf "dist/fancy-tar-${VERSION}.tar.gz" \
-              fancy_tar_progress.sh \
-              fancy-tar.1 \
-              completions/_fancy-tar \
-              README.md \
-              fancy-tar.spec
+          tar czvf dist/fancy-tar-${VERSION}.tar.gz \
+            scripts/fancy_tar_progress.sh \
+            docs/fancy-tar.1 \
+            completions/fancy-tar.bash \
+            completions/fancy-tar.zsh \
+            completions/fancy-tar.fish \
+            install.sh \
+            README.md \
+            fancy-tar.spec
 
-      - name: Get SHA256
+      - name: 🔁 Inject version into RPM spec
         run: |
-          cd dist
-          shasum -a 256 "fancy-tar-${VERSION}.tar.gz" > sha256.txt
-          cat sha256.txt
+          sed -i "s/^Version:.*/Version:        ${VERSION}/" fancy-tar.spec
+          sed -i "s|^Source0:.*|Source0:        https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz|" fancy-tar.spec
 
-      - name: Upload release assets
+      - name: 🧰 Install RPM build tools
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: 🏗 Build RPM package
+        run: |
+          mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          cp fancy-tar.spec ~/rpmbuild/SPECS/
+          cp dist/fancy-tar-${VERSION}.tar.gz ~/rpmbuild/SOURCES/
+          rpmbuild -ba ~/rpmbuild/SPECS/fancy-tar.spec
+          find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} dist/ \;
+
+      - name: 📤 Upload release assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
             dist/fancy-tar-${{ env.VERSION }}.tar.gz
-            dist/sha256.txt
+            dist/*.rpm
 
