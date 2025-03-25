@@ -1,33 +1,38 @@
-{
-name: Update Homebrew Formula
+name: Update Homebrew Tap
 
 on:
   release:
     types: [published]
 
 jobs:
-  update-formula:
+  update-homebrew:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set version
-        run: echo "VERSION={GITHUB_REF#refs/tags/v}" >> ${{GITHUB_ENV}}
+      - name: 🏷 Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
 
-      - name: Download tarball
+      - name: 📦 Download tarball
         run: |
-          wget https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz -O tarball.tar.gz
-          SHA=$(shasum -a 256 tarball.tar.gz | awk '{print $1}')
-          echo "SHA=$SHA" >> ${{GITHUB_ENV}}
+          curl -L -o fancy-tar-${VERSION}.tar.gz https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz
+          shasum -a 256 fancy-tar-${VERSION}.tar.gz | awk '{print $1}' > sha256.txt
 
-      - name: Checkout tap repo
+      - name: 🛠 Clone tap repository
         uses: actions/checkout@v3
+        with:
+          repository: jgiambona/homebrew-fancy-tar
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: tap
 
-      - name: Update Formula
+      - name: 📝 Update Homebrew Formula
         run: |
+          cd tap
+          SHA=$(cat ../sha256.txt)
           sed -i "s|url \".*\"|url \"https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz\"|" Formula/fancy-tar.rb
           sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" Formula/fancy-tar.rb
-          git config user.name "github-actions"
+
+          git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -am "Update fancy-tar.rb to v${VERSION}"
+          git commit -am "Update formula to v${VERSION}"
           git push
-}
+
