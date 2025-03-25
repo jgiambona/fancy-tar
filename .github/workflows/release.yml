@@ -51,14 +51,14 @@ jobs:
 
       - name: 🛠 Ensure GitHub release exists
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TAG="v$VERSION"
           gh release view "$TAG" || gh release create "$TAG" --title "fancy-tar $TAG" --notes "Automated release for fancy-tar"
 
       - name: 📤 Upload release assets using GitHub CLI
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TAG="v$VERSION"
           gh release upload "$TAG" \
