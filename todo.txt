@@ -1,8 +1,8 @@
-Recursivity
-Encryption with password
+Encryption with password or given a key
 File hashes (MD5 and SHA256)?
 homebrew install
 rpm, deb and pkg
-support for zip, 7z
+support for zip, 7z, and other compression formats
 multithreading?
 self-extracting files
+option to auto-gen list of files for users that are not computer savvy. (a) CSV with file name, size, and relative path(b) text file listing files and folders in hiarchical form.
