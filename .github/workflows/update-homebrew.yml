@@ -1,0 +1,37 @@
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get tag version
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Get tarball and SHA256
+        run: |
+          wget https://github.com/YOUR_USERNAME/fancy-tar/releases/download/${TAG}/fancy-tar-${TAG}.tar.gz -O fancy-tar.tar.gz
+          SHA=$(shasum -a 256 fancy-tar.tar.gz | awk '{print $1}')
+          echo "SHA=$SHA" >> $GITHUB_ENV
+
+      - name: Clone homebrew tap
+        uses: actions/checkout@v3
+        with:
+          repository: YOUR_USERNAME/homebrew-fancy-tar
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: tap
+
+      - name: Update Formula
+        run: |
+          sed -i "s|url \".*\"|url \"https://github.com/YOUR_USERNAME/fancy-tar/releases/download/${TAG}/fancy-tar-${TAG}.tar.gz\"|" tap/Formula/fancy-tar.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" tap/Formula/fancy-tar.rb
+          cd tap
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -am "Update to version ${TAG}"
+          git push
+

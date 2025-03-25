@@ -1,0 +1,41 @@
+name: Package & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Create tarball
+        run: |
+          mkdir dist
+          tar czvf "dist/fancy-tar-${VERSION}.tar.gz" \
+              fancy_tar_progress.sh \
+              fancy-tar.1 \
+              completions/_fancy-tar \
+              README.md \
+              fancy-tar.spec
+
+      - name: Get SHA256
+        run: |
+          cd dist
+          shasum -a 256 "fancy-tar-${VERSION}.tar.gz" > sha256.txt
+          cat sha256.txt
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/fancy-tar-${{ env.VERSION }}.tar.gz
+            dist/sha256.txt
+

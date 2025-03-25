@@ -1,0 +1,3 @@
+Recursivity
+Encryption with password
+File hashes (MD5 and SHA256)?

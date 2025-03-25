@@ -1,0 +1,5 @@
+complete -c fancy-tar -s o -d 'Set output filename'
+complete -c fancy-tar -s n -d 'No gzip'
+complete -c fancy-tar -s s -d 'Slow mode'
+complete -c fancy-tar -s x -d 'Open folder after'
+complete -c fancy-tar -s h -d 'Show help'
