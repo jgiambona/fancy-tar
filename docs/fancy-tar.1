@@ -1,4 +1,58 @@
-.TH fancy-tar 1 "March 2025" "v1.0.0" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.2.9" "User Commands"
 .SH NAME
-fancy-tar \- create tar.gz archives with progress and extras
-...
+fancy-tar \- smarter tar archiving with progress bar, file info, and more
+.SH SYNOPSIS
+.B fancy-tar
+[\fIoptions\fR] \fIfile1\fR [file2 ...]
+.SH DESCRIPTION
+\fBfancy-tar\fR is a command-line wrapper around \fItar\fR and \fIgzip\fR that adds a user-friendly progress display, estimated time, total file count, archive size, and optional desktop notifications.
+
+It supports gzip or plain .tar output, optional slow mode for testing, and automatically notifies the user on completion.
+
+.SH OPTIONS
+.TP
+.B \-o \fIFILE\fR
+Set the output archive filename (default: \fIarchive.tar.gz\fR)
+.TP
+.B \-n
+Do not compress with gzip. Creates a .tar instead of .tar.gz.
+.TP
+.B \-s
+Enable slow mode (adds delay between files to simulate slow compression).
+.TP
+.B \-x
+Open the output folder when done (uses \fBopen\fR or \fBxdg-open\fR).
+.TP
+.B \-h
+Show help message and exit.
+
+.SH EXAMPLES
+.TP
+Create a gzip archive from a folder:
+.B
+fancy-tar my-folder
+
+.TP
+Create a raw .tar archive without compression:
+.B
+fancy-tar -n -o raw.tar my-folder another-folder
+
+.TP
+Simulate slow mode with desktop notification:
+.B
+fancy-tar -s big-directory
+
+.TP
+Specify a custom archive filename:
+.B
+fancy-tar -o backup-2025.tar.gz files/*.txt
+
+.SH AUTHOR
+Written by Jason Giambona <https://github.com/jgiambona>
+
+.SH VERSION
+This manual page is for \fBfancy-tar\fR version 1.2.9
+
+.SH SEE ALSO
+tar(1), gzip(1), pv(1)
+
