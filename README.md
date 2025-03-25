@@ -79,6 +79,17 @@ fancy-tar my-folder
 fancy-tar --tree my-folder
 ```
 
+### With accurate progress output:
+
+```bash
+fancy-tar my-folder
+# [1/42] Adding: my-folder/doc.txt
+```
+
+```bash
+fancy-tar --tree my-folder
+```
+
 ```bash
 fancy-tar my-folder
 ```
@@ -128,4 +139,3 @@ PRs welcome! Want to add ZIP support, multithreading, or self-extraction? Fork a
 
 - [pv](https://www.ivarch.com/programs/pv.shtml) — terminal progress bar tool
 - Everyone who got sick of watching `tar` do nothing quietly
-

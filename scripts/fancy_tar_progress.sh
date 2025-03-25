@@ -105,12 +105,16 @@ tar_opts=""
 file_list=$(find "$@" -type f)
 
 # Archive using numbered progress
-echo "📦 Archiving files:"
-echo "$file_list" | while IFS= read -r file; do
+echo "📦 Archiving files..."
+echo "$file_list" > filelist.txt
+count=0
+while IFS= read -r file; do
   count=$((count + 1))
   echo "[$count/$total_files] Adding: $file"
   [ "$slow" = true ] && sleep 0.25
-done | tar -cvf "$tmpfile" $tar_opts --files-from=<(echo "$file_list") >/dev/null
+done < filelist.txt
+tar -cvf "$tmpfile" $tar_opts --files-from=filelist.txt >/dev/null
+rm -f filelist.txt
 
 # Compress if needed
 if [ "$gzip" = true ]; then
@@ -144,4 +148,3 @@ if [ "$open_after" = true ]; then
   elif command -v xdg-open >/dev/null; then xdg-open "$folder"
   fi
 fi
-
