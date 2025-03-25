@@ -3,3 +3,6 @@ Encryption with password
 File hashes (MD5 and SHA256)?
 homebrew install
 rpm, deb and pkg
+support for zip, 7z
+multithreading?
+self-extracting files
