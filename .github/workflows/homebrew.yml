@@ -1,0 +1,33 @@
+{
+name: Update Homebrew Formula
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set version
+        run: echo "VERSION={GITHUB_REF#refs/tags/v}" >> ${{GITHUB_ENV}}
+
+      - name: Download tarball
+        run: |
+          wget https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz -O tarball.tar.gz
+          SHA=$(shasum -a 256 tarball.tar.gz | awk '{print $1}')
+          echo "SHA=$SHA" >> ${{GITHUB_ENV}}
+
+      - name: Checkout tap repo
+        uses: actions/checkout@v3
+
+      - name: Update Formula
+        run: |
+          sed -i "s|url \".*\"|url \"https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz\"|" Formula/fancy-tar.rb
+          sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" Formula/fancy-tar.rb
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git commit -am "Update fancy-tar.rb to v${VERSION}"
+          git push
+}
