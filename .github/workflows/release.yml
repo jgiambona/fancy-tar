@@ -19,17 +19,11 @@ jobs:
       - name: 📁 Create dist folder
         run: mkdir -p dist
 
-      - name: 📦 Create source tarball
+      - name: 📦 Create source tarball (with versioned folder)
         run: |
-          tar czvf dist/fancy-tar-${VERSION}.tar.gz \
-            scripts/fancy_tar_progress.sh \
-            docs/fancy-tar.1 \
-            completions/fancy-tar.bash \
-            completions/fancy-tar.zsh \
-            completions/fancy-tar.fish \
-            install.sh \
-            README.md \
-            fancy-tar.spec
+          mkdir -p build/fancy-tar-${VERSION}
+          cp -r scripts docs completions install.sh README.md fancy-tar.spec build/fancy-tar-${VERSION}/
+          tar czvf dist/fancy-tar-${VERSION}.tar.gz -C build fancy-tar-${VERSION}
 
       - name: 🔁 Inject version into RPM spec
         run: |
@@ -53,4 +47,7 @@ jobs:
           files: |
             dist/fancy-tar-${{ env.VERSION }}.tar.gz
             dist/*.rpm
+
+      - name: 🧹 Cleanup
+        run: rm -rf build
 
