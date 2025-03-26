@@ -3,7 +3,7 @@ _fancy_tar() {
   local cur prev opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  opts="-o -n -s -x -h -t --tree --no-recursion --help"
+  opts="-o -n -s -x -h -t --tree --no-recursion --hash --help"
 
   COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
 }

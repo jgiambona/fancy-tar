@@ -1,14 +1,13 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.4" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.6" "User Commands"
 .SH NAME
 fancy-tar \- smarter tar archiving with progress bar, file info, and more
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
 .SH DESCRIPTION
-The archive progress now includes accurate per-file numbering using a pre-scanned file list.
 \fBfancy-tar\fR is a command-line wrapper around \fItar\fR and \fIgzip\fR that adds a user-friendly progress display, estimated time, total file count, archive size, and optional desktop notifications.
 
-It supports gzip or plain .tar output, optional slow mode for testing, shallow archiving, hierarchical file preview, and automatically notifies the user on completion.
+It supports gzip or plain .tar output, optional slow mode for testing, shallow archiving, tree view, hash output, and automatically notifies the user on completion.
 
 .SH OPTIONS
 .TP
@@ -25,10 +24,13 @@ Enable slow mode (adds delay between files to simulate slow compression).
 Open the output folder when done (uses \fBopen\fR or \fBxdg-open\fR).
 .TP
 .B \-t, \--tree
-Display a hierarchical tree view of files before archiving.
+Show hierarchical file structure before archiving.
 .TP
 .B \--no-recursion
 Do not include subdirectory contents (shallow archive).
+.TP
+.B \--hash
+Output SHA256 hash file alongside the archive.
 .TP
 .B \-h, \--help
 Show help message and exit.
@@ -40,35 +42,29 @@ Create a gzip archive from a folder:
 fancy-tar my-folder
 
 .TP
-Create a shallow archive (top-level contents only):
+Create a shallow archive (top-level only):
 .B
 fancy-tar --no-recursion my-folder
 
 .TP
-Preview file structure in tree form before archiving:
+Show tree view before archiving:
 .B
 fancy-tar --tree my-folder
 
 .TP
-Create a raw .tar archive without compression:
+Generate archive with hash:
 .B
-fancy-tar -n -o raw.tar my-folder another-folder
+fancy-tar --hash my-folder
 
 .TP
-Simulate slow mode with desktop notification:
+Simulate slow mode:
 .B
 fancy-tar -s big-directory
 
 .TP
-Specify a custom archive filename:
+Set custom archive filename:
 .B
-fancy-tar -o backup-2025.tar.gz files/*.txt
-
-.SH AUTHOR
-Written by Jason Giambona <https://github.com/jgiambona>
+fancy-tar -o backup-2025.tar.gz files/
 
 .SH VERSION
-This manual page is for \fBfancy-tar\fR version 1.3.5
-
-.SH SEE ALSO
-tar(1), gzip(1), pv(1)
+This manual page is for \fBfancy-tar\fR version 1.3.6

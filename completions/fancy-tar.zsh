@@ -8,5 +8,6 @@ _arguments \
   '-t[Show tree view before archiving]' \
   '--tree[Show tree view before archiving]' \
   '--no-recursion[Disable recursive archiving]' \
+  '--hash[Output SHA256 hash file]' \
   '-h[Show help]' \
   '--help[Show help]'

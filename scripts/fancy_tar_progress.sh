@@ -8,9 +8,10 @@ show_help() {
   echo "  -n                No gzip compression (create .tar instead of .tar.gz)"
   echo "  -s                Enable slow mode (simulate slower compression)"
   echo "  -x                Open the output folder when done"
-  echo "  -h, --help        Show this help message"
   echo "  -t, --tree        Show hierarchical file structure before archiving"
   echo "  --no-recursion    Do not include directory contents (shallow archive)"
+  echo "  --hash            Output SHA256 hash file alongside the archive"
+  echo "  -h, --help        Show this help message"
   exit 0
 }
 
@@ -21,20 +22,22 @@ slow=false
 open_after=false
 no_recurse=false
 show_tree=false
+hash_output=false
 
-# First parse long options
+# Parse long options
 for arg in "$@"; do
   shift
   case "$arg" in
     --no-recursion) set -- "$@" "-R" ;;
     --tree) set -- "$@" "-T" ;;
+    --hash) set -- "$@" "-H" ;;
     --help) show_help ;;
     *) set -- "$@" "$arg" ;;
   esac
 done
 
 # Parse short options
-while getopts ":o:nsxhRTt" opt; do
+while getopts ":o:nsxhRTtH" opt; do
   case ${opt} in
     o ) output=$OPTARG ;;
     n ) gzip=false ;;
@@ -42,6 +45,7 @@ while getopts ":o:nsxhRTt" opt; do
     x ) open_after=true ;;
     R ) no_recurse=true ;;
     T | t ) show_tree=true ;;
+    H ) hash_output=true ;;
     h ) show_help ;;
     \? ) echo "Invalid option: -$OPTARG" >&2; show_help ;;
     : ) echo "Option -$OPTARG requires an argument." >&2; show_help ;;
@@ -49,24 +53,20 @@ while getopts ":o:nsxhRTt" opt; do
 done
 shift $((OPTIND -1))
 
-# Input check
 if [ $# -eq 0 ]; then
   echo "No input files specified."
   show_help
 fi
 
-# Determine tar extension
 extension=".tar.gz"
 if [ "$gzip" = false ]; then
   extension=".tar"
 fi
 
-# Sanitize output name
 [[ $output != *"$extension" ]] && output="${output}${extension}"
 
-# Count and size
 echo "📦 Calculating total size..."
-total_files=$(find "$@" | wc -l | tr -d ' ')
+total_files=$(find "$@" -type f | wc -l | tr -d ' ')
 total_size=$(du -ch "$@" 2>/dev/null | grep total | awk '{print $1}')
 [ -z "$total_size" ] && total_size="?"
 
@@ -77,7 +77,6 @@ echo "🔧 Compression: $([ "$gzip" = true ] && echo "gzip (.tar.gz)" || echo "n
 echo "📂 Recursion: $([ "$no_recurse" = true ] && echo "disabled" || echo "enabled")"
 echo ""
 
-# Show tree structure
 if [ "$show_tree" = true ]; then
   echo "📂 File hierarchy:"
   for file in "$@"; do
@@ -92,7 +91,6 @@ if [ "$show_tree" = true ]; then
   echo ""
 fi
 
-# Archive with progress
 tmpfile="fancy-tar-tmp.tar"
 rm -f "$tmpfile"
 
@@ -101,22 +99,19 @@ count=0
 tar_opts=""
 [ "$no_recurse" = true ] && tar_opts="--no-recursion"
 
-# Generate full list of files
 file_list=$(find "$@" -type f)
-
-# Archive using numbered progress
-echo "📦 Archiving files..."
 echo "$file_list" > filelist.txt
-count=0
+
+echo "📦 Archiving files..."
 while IFS= read -r file; do
   count=$((count + 1))
   echo "[$count/$total_files] Adding: $file"
   [ "$slow" = true ] && sleep 0.25
 done < filelist.txt
-tar -cvf "$tmpfile" $tar_opts --files-from=filelist.txt >/dev/null
+
+tar -cf "$tmpfile" $tar_opts --files-from=filelist.txt 2>&1 | tee /dev/stderr
 rm -f filelist.txt
 
-# Compress if needed
 if [ "$gzip" = true ]; then
   echo "🗜 Compressing archive..."
   pv "$tmpfile" | gzip > "$output"
@@ -134,14 +129,19 @@ echo "✅ Done! Archive created: $output"
 echo "📏 Archive size: $archive_size"
 echo "🕒 Total time elapsed: $((elapsed / 60))m $((elapsed % 60))s"
 
-# Notifications
+# Optional: write hash
+if [ "$hash_output" = true ]; then
+  checksum_file="${output}.sha256"
+  shasum -a 256 "$output" > "$checksum_file"
+  echo "🔐 SHA256 hash saved to: $checksum_file"
+fi
+
 if command -v notify-send >/dev/null 2>&1; then
   notify-send "fancy-tar" "Archive created: $output"
 elif command -v osascript >/dev/null 2>&1; then
   osascript -e "display notification \"Archive created: $output\" with title \"fancy-tar\""
 fi
 
-# Open folder if requested
 if [ "$open_after" = true ]; then
   folder=$(dirname "$output")
   if command -v open >/dev/null; then open "$folder"
