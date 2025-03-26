@@ -1,82 +1,91 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.11" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.12" "User Commands"
 .SH NAME
-fancy-tar \- smart archive tool with compression, encryption, progress, and hashing
+fancy-tar \- smart archive tool with ZIP/tar compression, encryption, and hashing
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
 .SH DESCRIPTION
-\fBfancy-tar\fR enhances the traditional tar/gzip workflow with useful modern features like progress bars, encryption, hash generation, and intelligent handling of keys and passwords.
+\fBfancy-tar\fR is a flexible wrapper for `tar`, `gzip`, and `zip`, providing progress, tree views, hashing, encryption, and cleanup. Great for secure backups and fast workflows.
 
 .SH OPTIONS
 .TP
 .B \-o \fIFILE\fR
-Specify output filename (default: archive.tar.gz)
+Specify output filename. Defaults to archive.tar.gz or archive.zip.
 .TP
 .B \-n
-Do not gzip the archive (outputs .tar)
+Skip gzip compression (outputs raw .tar).
 .TP
 .B \-s
-Simulate slow file processing
+Enable slow-mode to simulate compression delays.
 .TP
 .B \-x
-Open archive folder when done
+Open output folder after archive is created.
 .TP
 .B \-t, \--tree
-Preview files with a tree view before archiving
+Show a file tree of contents before archiving.
 .TP
 .B \--no-recursion
-Archive top-level files only
+Include only top-level files.
 .TP
 .B \--hash
-Generate a SHA256 checksum for the archive
+Generate a SHA256 checksum for the output archive.
 .TP
 .B \--encrypt[=gpg|openssl]
-Encrypt using GPG (default) or OpenSSL
+Encrypt archive using GPG (default) or OpenSSL AES.
 .TP
 .B \--recipient \fIID\fR
-Public key ID/email to encrypt with (for GPG)
+GPG public key ID/email for asymmetric encryption.
 .TP
 .B \--password \fIPASS\fR
-Password to use for symmetric encryption (prompts if not given)
+Password for symmetric encryption or ZIP password.
+.TP
+.B \--zip
+Create a .zip archive. Supports classic password-based ZIP encryption.
 .TP
 .B \-h, \--help
-Show help and exit
+Show help and usage information.
 
-.SH ENCRYPTION BEHAVIOR
-If GPG encryption is selected:
-- If \fB--recipient\fR is provided, public-key encryption is used
-- If not, symmetric encryption is used and user is prompted for a password if not supplied
+.SH ZIP MODE
+If `--zip` is used:
+- Archive is created using `zip` or `zip -e` (for password)
+- Supports `--tree`, `--no-recursion`, `--password`, and `--hash`
+- Displays a warning if password encryption is used:
 
-OpenSSL always uses symmetric AES-256-CBC encryption with a password.
+.B Classic ZIP encryption is insecure:
+  - Easily broken with modern tools
+  - Not suitable for sensitive data
+  - Use GPG or OpenSSL instead
 
-Encrypted archives are saved as \fBarchive.tar.gz.gpg\fR or \fBarchive.tar.gz.enc\fR.
+.SH ENCRYPTION (TAR)
+If `--encrypt=gpg`:
+- Uses symmetric encryption if no recipient is specified
+- Prompts for password if none provided
 
-.SH HASHING
-If \fB--hash\fR is used, a .sha256 file is created for the final encrypted or unencrypted archive.
+If `--encrypt=openssl`:
+- Uses AES-256-CBC with password
 
-.SH FAIL SAFETY
-On any failure, incomplete output files are deleted to ensure integrity.
+Encrypted output is saved with .gpg or .enc extension.
 
 .SH EXAMPLES
 .TP
-Archive and encrypt with GPG (prompt for password):
+Create a ZIP archive:
 .B
-fancy-tar mydata/ --encrypt=gpg
+fancy-tar data/ --zip
 
 .TP
-Encrypt with OpenSSL:
+ZIP with password:
 .B
-fancy-tar secure/ --encrypt=openssl --password=abc123
+fancy-tar data/ --zip --password hunter2
 
 .TP
-Encrypt using GPG public key:
+GPG encrypt tar:
 .B
-fancy-tar files/ --encrypt=gpg --recipient=bob@example.com
+fancy-tar myfolder --encrypt=gpg
 
 .TP
-Archive with SHA256:
+Tar + hash:
 .B
 fancy-tar logs/ --hash
 
 .SH VERSION
-fancy-tar 1.3.11
+fancy-tar 1.3.12
