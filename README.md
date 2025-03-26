@@ -1,6 +1,6 @@
 # 🎁 fancy-tar
 
-**Smarter, safer, and more secure archiving with progress bars, encryption, hash verification, file tree previews, desktop notifications, and more.**
+**A smarter way to archive files with compression, progress bars, optional encryption, hashing, file previews, and more.**
 
 Created by [Jason Giambona](https://github.com/jgiambona)
 
@@ -8,17 +8,17 @@ Created by [Jason Giambona](https://github.com/jgiambona)
 
 ## 🚀 Features
 
-- 📦 Simple interface over `tar` + `gzip`
-- 🧾 Show file count, total size, and progress
-- 🌳 Tree view before archiving
-- 🔐 Encryption via GPG or OpenSSL (symmetric or asymmetric)
-- 🔑 Password prompt fallback
-- 🛡️ Recipient validation with key suggestions
-- ✅ SHA256 hashing of the final archive
-- ❌ Cleans up incomplete files if an error occurs
-- 🖥️ Desktop notifications on macOS/Linux
+- 📦 `tar` + `gzip` made human-friendly
+- ⏱️ Progress and file count display
+- 🌳 Tree view preview
+- 🔐 Optional encryption: GPG (symmetric or asymmetric) or OpenSSL
+- 🔑 Password prompts when needed
+- 🧠 Smart recipient validation
+- ✅ SHA256 verification
+- ❌ Cleans up incomplete files on error
 - 📂 Optionally open the output folder
-- 🐚 Autocompletion for Bash, Zsh, Fish
+- 🖥️ macOS/Linux notifications
+- 🐚 Autocompletions for Bash, Zsh, Fish
 
 ---
 
@@ -48,57 +48,45 @@ fancy-tar [options] <files...>
 | `-s`                      | Simulate slow processing                                                  |
 | `-x`                      | Open output folder when done                                              |
 | `-t`, `--tree`            | Show tree view before archiving                                           |
-| `--no-recursion`          | Shallow archive (top-level only)                                          |
-| `--hash`                  | Output SHA256 `.sha256` hash file                                         |
-| `--encrypt[=gpg|openssl]` | Encrypt using GPG (default) or OpenSSL                                    |
-| `--recipient <id>`        | GPG public key ID/email for encryption                                    |
+| `--no-recursion`          | Archive only top-level files                                              |
+| `--hash`                  | Output SHA256 hash of final archive                                       |
+| `--encrypt[=gpg|openssl]` | Encrypt archive using GPG or OpenSSL                                      |
+| `--recipient <id>`        | GPG recipient (email or key ID)                                           |
 | `--password <pass>`       | Password for symmetric encryption                                         |
-| `-h`, `--help`            | Show help                                                                 |
+| `-h`, `--help`            | Show help message                                                         |
 
 ---
 
-## 🔐 Encryption
+## 🔐 Encryption Modes
 
-### GPG (asymmetric) with public key:
+### 🔑 Symmetric GPG (default)
+If `--encrypt=gpg` is used without a `--recipient`, the script prompts for a password and encrypts symmetrically:
 ```bash
-fancy-tar secure/ --encrypt=gpg --recipient=jason@example.com
-# ➜ Output: archive.tar.gz.gpg
+fancy-tar secure/ --encrypt=gpg
+# ➜ Prompts for password and creates archive.tar.gz.gpg
 ```
 
-### GPG (symmetric) with prompt:
+### 🧾 GPG with Public Key
 ```bash
-fancy-tar mydata/ --encrypt=gpg
-# Prompts for password, saves archive.tar.gz.gpg
+fancy-tar backup/ --encrypt=gpg --recipient=you@example.com
+# ➜ archive.tar.gz.gpg
 ```
 
-### OpenSSL with password:
+### 🔒 OpenSSL Encryption
 ```bash
-fancy-tar mydata/ --encrypt=openssl --password hunter2
-# ➜ Output: archive.tar.gz.enc
+fancy-tar data/ --encrypt=openssl --password=secret
+# ➜ archive.tar.gz.enc
 ```
 
 ---
 
-## 🛡️ Smart Behavior
+## ✅ Smart Features
 
-- Detects missing recipient and shows available keys
-- Supports both `--flag=value` and `--flag value` forms
-- Encrypts the final archive file, not a renamed placeholder
-- Only saves `.gpg` or `.enc` file if encryption succeeds
-- Cleans up unencrypted files after encryption
-- Hash is generated after all encryption is done
-
----
-
-## ✅ Example
-
-```bash
-fancy-tar logs/ --hash --encrypt=gpg --recipient=jason@example.com
-```
-
-Produces:
-- `archive.tar.gz.gpg`
-- `archive.tar.gz.gpg.sha256`
+- Automatically detects recipient format
+- Fallback to password prompt if `--password` not given
+- `.gpg` or `.enc` appended automatically
+- SHA256 `.sha256` created after encryption
+- Safe cleanup on failure
 
 ---
 

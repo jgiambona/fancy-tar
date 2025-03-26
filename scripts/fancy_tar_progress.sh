@@ -61,14 +61,6 @@ if [ ${#input_files[@]} -eq 0 ]; then
   show_help
 fi
 
-# Validate recipient
-if [[ -n "$encrypt_method" && "$encrypt_method" == "gpg" && -z "$password" && -z "$recipient" ]]; then
-  echo "❌ --recipient requires a value (email, fingerprint, or key ID) for public key encryption"
-  echo "🔑 Available recipients:"
-  gpg --list-keys --with-colons | grep '^uid' | cut -d: -f10
-  exit 1
-fi
-
 extension=".tar.gz"
 [ "$gzip" = false ] && extension=".tar"
 [[ "$output" != *"$extension" ]] && output="${output}${extension}"

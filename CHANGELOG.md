@@ -4,41 +4,37 @@ All notable changes to **fancy-tar** are documented here.
 
 ---
 
+## [v1.3.11] - 2025-03-26
+
+### Fixed
+- 🔐 GPG encryption now defaults to symmetric mode if `--recipient` is not provided
+- ✅ No longer shows an error when `--encrypt=gpg` is used without `--recipient`
+- 🔑 Prompts for password automatically if `--password` not provided
+- 🧠 More intuitive behavior with clean fallback logic
+
+---
+
 ## [v1.3.10] - 2025-03-26
 
 ### Fixed
-- 🧠 Proper argument parsing for `--recipient`, `--encrypt`, `--password`, etc.
-  - Supports both `--flag=value` and `--flag value`
-- 🛡 Prevents flags from being passed to `find` or `tar`
-- 🧼 No pre-renaming before encryption (fixes GPG errors)
-- ❌ Displays error only if encryption truly fails
-- ✅ SHA256 hash is created only after successful encryption
+- Proper argument parsing for all long-form flags
+- Removed accidental passing of flags to `find`/`tar`
+- Encryption works cleanly with `.gpg` or `.enc`
+- Only shows success if encryption truly succeeds
 
 ### Changed
-- 🧾 Encrypted files are now saved separately as `.gpg` or `.enc`
-- 🧹 Unencrypted archive is deleted after successful encryption
-- 🔐 Updated logic ensures secure, accurate archive creation
+- Encrypted files created as new files, original tar.gz removed
+- SHA256 only created for final file after encryption
 
 ---
 
 ## [v1.3.9] - 2025-03-26
 
-### Added
-- 📦 Smart file extension handling for `.gpg` and `.enc`
-- 🛡 Extension auto-appending and validation
-- 📘 Updated docs and completions
+- Smart `.gpg` / `.enc` file extension handling
+- Updated documentation and completions
 
-### Changed
-- 🔐 Encryption no longer overwrites the input archive
+## [v1.3.8] - Not Tagged
 
----
-
-## [v1.3.8] - Not Tagged (merged into 1.3.9)
-
-### Fixed
-- ✅ `--hash` now runs after encryption
-- ❌ Incomplete files are cleaned on error
-
-### Added
-- 🧠 Validates `--recipient`
-- 🔑 Password prompt fallback
+- Added `--hash`
+- Added encryption and key validation
+- Cleanup of incomplete files
