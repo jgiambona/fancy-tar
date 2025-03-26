@@ -29,64 +29,53 @@ hash_output=false
 encrypt_method=""
 recipient=""
 password=""
-recipient_flag_used=false
-user_provided_output=false
+input_files=()
 
-# Parse long options
-for arg in "$@"; do
-  shift
-  case "$arg" in
-    --no-recursion) set -- "$@" "-R" ;;
-    --tree) set -- "$@" "-T" ;;
-    --hash) hash_output=true ;;
-    --encrypt=*) encrypt_method="${arg#*=}" ;;
-    --encrypt) encrypt_method="gpg" ;;
-    --recipient) recipient_flag_used=true; set -- "$@" "-E" ;;
-    --password) set -- "$@" "-P" ;;
-    --help) show_help ;;
-    *) set -- "$@" "$arg" ;;
+# Custom arg parsing loop
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) output="$2"; shift 2 ;;
+    -n) gzip=false; shift ;;
+    -s) slow=true; shift ;;
+    -x) open_after=true; shift ;;
+    -t|--tree) show_tree=true; shift ;;
+    --no-recursion) no_recurse=true; shift ;;
+    --hash) hash_output=true; shift ;;
+    --encrypt=*) encrypt_method="${1#*=}"; shift ;;
+    --encrypt) encrypt_method="gpg"; shift ;;
+    --recipient=*) recipient="${1#*=}"; shift ;;
+    --recipient) recipient="$2"; shift 2 ;;
+    --password=*) password="${1#*=}"; shift ;;
+    --password) password="$2"; shift 2 ;;
+    -h|--help) show_help ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      show_help
+      ;;
+    *) input_files+=("$1"); shift ;;
   esac
 done
 
-# Parse short options
-while getopts ":o:nsxhRTtE:P:" opt; do
-  case ${opt} in
-    o ) output=$OPTARG; user_provided_output=true ;;
-    n ) gzip=false ;;
-    s ) slow=true ;;
-    x ) open_after=true ;;
-    R ) no_recurse=true ;;
-    T | t ) show_tree=true ;;
-    E ) recipient=$OPTARG ;;
-    P ) password=$OPTARG ;;
-    h ) show_help ;;
-    \? ) echo "Invalid option: -$OPTARG" >&2; show_help ;;
-    : ) echo "Option -$OPTARG requires an argument." >&2; show_help ;;
-  esac
-done
-shift $((OPTIND -1))
-
-if [ $# -eq 0 ]; then
+if [ ${#input_files[@]} -eq 0 ]; then
   echo "No input files specified."
   show_help
 fi
 
-# Fail if recipient flag was used with no value
-if [ "$recipient_flag_used" = true ] && [ -z "$recipient" ]; then
-  echo "❌ --recipient requires a value (email, fingerprint, or key ID)"
+# Validate recipient
+if [[ -n "$encrypt_method" && "$encrypt_method" == "gpg" && -z "$password" && -z "$recipient" ]]; then
+  echo "❌ --recipient requires a value (email, fingerprint, or key ID) for public key encryption"
   echo "🔑 Available recipients:"
   gpg --list-keys --with-colons | grep '^uid' | cut -d: -f10
   exit 1
 fi
 
-# Determine default extension
 extension=".tar.gz"
 [ "$gzip" = false ] && extension=".tar"
-[[ "$output" != *"$extension" && "$user_provided_output" = false ]] && output="${output}${extension}"
+[[ "$output" != *"$extension" ]] && output="${output}${extension}"
 
 echo "📦 Calculating total size..."
-total_files=$(find "$@" -type f | wc -l | tr -d ' ')
-total_size=$(du -ch "$@" 2>/dev/null | grep total | awk '{print $1}')
+total_files=$(find "${input_files[@]}" -type f | wc -l | tr -d ' ')
+total_size=$(du -ch "${input_files[@]}" 2>/dev/null | grep total | awk '{print $1}')
 [ -z "$total_size" ] && total_size="?"
 
 echo "📁 Total files: $total_files"
@@ -99,7 +88,7 @@ echo ""
 
 if [ "$show_tree" = true ]; then
   echo "📂 File hierarchy:"
-  for file in "$@"; do
+  for file in "${input_files[@]}"; do
     find "$file" | awk -v base="$file" '
     {
       rel=substr($0, length(base)+2);
@@ -119,7 +108,7 @@ count=0
 tar_opts=""
 [ "$no_recurse" = true ] && tar_opts="--no-recursion"
 
-file_list=$(find "$@" -type f)
+file_list=$(find "${input_files[@]}" -type f)
 echo "$file_list" > filelist.txt
 
 echo "📦 Archiving files..."
@@ -140,15 +129,11 @@ else
   mv "$tmpfile" "$output"
 fi
 
-# Update output name if encrypted
+# Encryption (output saved separately)
 if [ -n "$encrypt_method" ]; then
   case "$encrypt_method" in
     gpg)
-      if [[ "$output" != *.gpg ]]; then
-        echo "ℹ️  Changing extension to .gpg"
-        mv "$output" "$output.gpg"
-        output="${output}.gpg"
-      fi
+      encrypted="${output}.gpg"
       if [ -n "$recipient" ]; then
         if ! gpg --list-keys "$recipient" >/dev/null 2>&1; then
           echo "❌ No public key found for recipient: $recipient"
@@ -158,28 +143,26 @@ if [ -n "$encrypt_method" ]; then
           rm -f "$output"
           exit 1
         fi
-        gpg --encrypt --recipient "$recipient" "${output%.gpg}"
-        mv "${output%.gpg}.gpg" "$output"
+        gpg --output "$encrypted" --encrypt --recipient "$recipient" "$output" || { echo "❌ GPG encryption failed"; rm -f "$encrypted"; exit 1; }
       else
         if [ -z "$password" ]; then
           read -s -p "Enter password: " password
           echo
         fi
-        echo "$password" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 "${output%.gpg}"
-        mv "${output%.gpg}.gpg" "$output"
+        echo "$password" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$encrypted" "$output" || { echo "❌ GPG symmetric encryption failed"; rm -f "$encrypted"; exit 1; }
       fi
+      rm -f "$output"
+      output="$encrypted"
       ;;
     openssl)
-      if [[ "$output" != *.enc ]]; then
-        echo "ℹ️  Changing extension to .enc"
-        mv "$output" "$output.enc"
-        output="${output}.enc"
-      fi
+      encrypted="${output}.enc"
       if [ -z "$password" ]; then
         read -s -p "Enter password: " password
         echo
       fi
-      openssl enc -aes-256-cbc -salt -in "${output%.enc}" -out "$output" -pass pass:"$password" || { echo "❌ Encryption failed."; rm -f "$output"; exit 1; }
+      openssl enc -aes-256-cbc -salt -in "$output" -out "$encrypted" -pass pass:"$password" || { echo "❌ OpenSSL encryption failed"; rm -f "$encrypted"; exit 1; }
+      rm -f "$output"
+      output="$encrypted"
       ;;
     *)
       echo "❌ Unsupported encryption method: $encrypt_method"

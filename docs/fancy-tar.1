@@ -1,90 +1,78 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.9" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.10" "User Commands"
 .SH NAME
-fancy-tar \- smarter tar archiving with encryption, progress, integrity, and cleanup
+fancy-tar \- smarter tar archiving with encryption, hash, and file safety
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
 .SH DESCRIPTION
-\fBfancy-tar\fR is a user-friendly wrapper for \fItar\fR and \fIgzip\fR that adds real-time progress, file information, encryption, hashing, cleanup, and notifications. It helps you archive files securely and clearly.
+\fBfancy-tar\fR is a CLI tool that enhances traditional tar and gzip archiving with progress display, tree previews, encryption, hash output, and desktop notifications. It validates encryption settings, securely prompts for passwords, and avoids overwriting files.
 
 .SH OPTIONS
 .TP
 .B \-o \fIFILE\fR
-Set output filename (default: \fIarchive.tar.gz\fR). Encrypted archives will automatically use .gpg or .enc.
+Output archive filename (default: archive.tar.gz).
 .TP
 .B \-n
-Skip gzip compression (produces .tar instead of .tar.gz).
+Do not gzip compress (outputs .tar instead of .tar.gz).
 .TP
 .B \-s
-Simulate slow compression by delaying file processing.
+Enable simulated slow mode.
 .TP
 .B \-x
-Open the output folder upon completion.
+Open the archive's containing folder when done.
 .TP
 .B \-t, \--tree
-Show a file tree of contents before archiving.
+Display a tree view of the files being archived.
 .TP
 .B \--no-recursion
-Do not include subdirectory contents.
+Only include top-level files in archive.
 .TP
 .B \--hash
-Generate a SHA256 hash file (e.g., \fIarchive.tar.gz.sha256\fR).
+Create a .sha256 file for integrity verification.
 .TP
 .B \--encrypt[=gpg|openssl]
-Encrypt the archive using GPG (default) or OpenSSL AES-256. Prompts for password if not supplied.
+Encrypt archive with GPG (default) or OpenSSL.
 .TP
 .B \--recipient \fIID\fR
-Use the public key identified by ID (email, fingerprint, or key ID) for GPG encryption.
+Specify a GPG public key ID/email to encrypt to.
 .TP
 .B \--password \fIPASS\fR
-Provide password for symmetric encryption. If omitted, user is prompted securely.
+Supply password for symmetric encryption. Will prompt if omitted.
 .TP
 .B \-h, \--help
-Display help information and exit.
+Show usage message and exit.
 
-.SH ENCRYPTION BEHAVIOR
-.TP
-If GPG public key is specified using \fB--recipient\fR, asymmetric encryption is used.
-.TP
-If no recipient is given, symmetric encryption is used and a password is required or prompted.
-.TP
-OpenSSL encryption always uses AES-256-CBC with password.
-.TP
-Encrypted outputs are saved as \fIarchive.tar.gz.gpg\fR or \fIarchive.tar.gz.enc\fR automatically.
+.SH ENCRYPTION
+Symmetric or asymmetric encryption is supported:
+
+.B GPG (default)
+Encrypts to a .gpg file. Requires --recipient for public-key encryption.
+
+.B OpenSSL
+Encrypts to a .enc file using AES-256-CBC.
+
+.SH BEHAVIOR
+- Encrypted files are written separately (.gpg/.enc)
+- Original .tar(.gz) is removed after encryption
+- SHA256 is computed on the final file only
+- Only shows success messages if steps complete fully
+- Flags are parsed with or without "="
 
 .SH EXAMPLES
 .TP
-Create a gzip archive:
+Archive with SHA256:
 .B
-fancy-tar my-folder
+fancy-tar backup/ --hash
 
 .TP
-Create uncompressed tarball:
+Encrypt to public key:
 .B
-fancy-tar -n -o out.tar my-folder
+fancy-tar secure/ --encrypt=gpg --recipient alice@example.com
 
 .TP
-Encrypt using GPG (password prompt):
+Encrypt with password:
 .B
-fancy-tar --encrypt=gpg my-folder
-
-.TP
-Encrypt using GPG with public key:
-.B
-fancy-tar --encrypt=gpg --recipient jason@example.com my-folder
-
-.TP
-Encrypt using OpenSSL with password:
-.B
-fancy-tar --encrypt=openssl --password hunter2 secure/
-
-.TP
-Generate SHA256 hash:
-.B
-fancy-tar --hash my-folder
-
-.SH FILE CLEANUP
-If any step (compression, encryption) fails, the script deletes incomplete output to avoid corruption.
+fancy-tar notes/ --encrypt=openssl --password hunter2
 
 .SH VERSION
-fancy-tar 1.3.9
+fancy-tar 1.3.10

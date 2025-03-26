@@ -1,16 +1,16 @@
 #compdef fancy-tar
 
 _arguments \
-  '-o+[Set output archive name]:output:_files' \
+  '-o+[Output archive name]:output:_files' \
   '-n[No gzip compression]' \
-  '-s[Enable slow mode]' \
-  '-x[Open folder after archiving]' \
-  '-t[Show tree view before archiving]' \
-  '--tree[Show tree view before archiving]' \
-  '--no-recursion[Disable recursive archiving]' \
-  '--hash[Output SHA256 hash file]' \
-  '--encrypt[Encrypt with gpg or openssl]' \
-  '--recipient[Recipient GPG key]' \
+  '-s[Simulate slow mode]' \
+  '-x[Open output folder]' \
+  '-t[Tree view]' \
+  '--tree[Tree view]' \
+  '--no-recursion[Shallow archive only]' \
+  '--hash[Generate SHA256 file]' \
+  '--encrypt=[Encryption method]:method:(gpg openssl)' \
+  '--recipient[Public key ID/email]' \
   '--password[Password for encryption]' \
   '-h[Show help]' \
   '--help[Show help]'
