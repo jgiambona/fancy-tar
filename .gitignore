@@ -1,0 +1,39 @@
+# macOS system files
+.DS_Store
+
+# Log files
+*.log
+
+# Archive outputs
+*.tar
+*.tar.gz
+*.tar.gz.gpg
+*.tar.gz.enc
+*.sha256
+
+# Temporary/intermediate files
+*.tmp
+*.bak
+*.swp
+fancy-tar-tmp.tar
+
+# IDE/project files
+.vscode/
+.idea/
+*.iml
+
+# Shell history (if included by accident)
+.bash_history
+.zsh_history
+
+# OS-generated metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python cache (if any helper scripts are added later)
+__pycache__/
+*.py[cod]
+
+# Homebrew bottle output
+*.bottle.tar.gz

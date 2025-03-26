@@ -9,8 +9,8 @@ _arguments \
   '--tree[Show tree view before archiving]' \
   '--no-recursion[Disable recursive archiving]' \
   '--hash[Output SHA256 hash file]' \
-  '--encrypt[Encryption method: gpg or openssl]' \
-  '--recipient[Recipient public key for GPG encryption]' \
+  '--encrypt[Encrypt with gpg or openssl]' \
+  '--recipient[Recipient GPG key]' \
   '--password[Password for encryption]' \
   '-h[Show help]' \
   '--help[Show help]'

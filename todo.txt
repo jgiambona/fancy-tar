@@ -1,5 +1,4 @@
-Encryption with password or given a key
-File hashes (MD5 and SHA256)?
+Decrypting archives
 homebrew install
 rpm, deb and pkg
 support for zip, 7z, and other compression formats
