@@ -1,6 +1,6 @@
 # 🎁 fancy-tar
 
-**Smarter archiving with compression, encryption, progress bars, hashing, and now a version flag + improved password handling!**
+**Smarter archiving made simple. Create `.tar.gz`, `.zip`, or encrypted archives with progress bars, password prompts, file tree previews, and hashing.**
 
 Created by [Jason Giambona](https://github.com/jgiambona)
 
@@ -9,16 +9,15 @@ Created by [Jason Giambona](https://github.com/jgiambona)
 ## 🚀 Features
 
 - 📦 Gzip or ZIP archiving with tar-like syntax
-- 🔐 Encrypt with GPG or OpenSSL
-- 🔑 Password prompts with confirmation
+- 🔐 GPG or OpenSSL encryption with optional recipient or password
+- 🔑 Password confirmation to avoid typos
 - 📁 Tree view preview
-- ✅ SHA256 verification
-- 🧼 Cleans up on failure
-- 🧠 Smart recipient validation
-- ⚠️ Classic ZIP encryption warning
-- 📂 Optionally open the output folder
-- 🐚 Completions for Bash, Zsh, Fish
-- 🔢 `--version` flag support
+- ✅ SHA256 hash generation (`--hash`)
+- ⚠️ Security warning for classic ZIP encryption
+- 🧹 Cleans up incomplete archives on error
+- 🧠 Validates recipients, default to symmetric GPG
+- 🐚 Shell completions for Bash, Zsh, Fish
+- 🔢 `--version` support
 
 ---
 
@@ -35,37 +34,37 @@ fancy-tar [options] <files...>
 | Option                    | Description                                                               |
 |---------------------------|---------------------------------------------------------------------------|
 | `-o <file>`               | Set output archive filename                                               |
-| `-n`                      | No gzip compression (create .tar)                                         |
-| `-s`                      | Simulate slower archiving                                                 |
-| `-x`                      | Open folder after archiving                                               |
-| `-t`, `--tree`            | Show tree view preview                                                    |
-| `--no-recursion`          | Shallow archive (top-level files only)                                    |
-| `--hash`                  | Create `.sha256` checksum of final file                                   |
-| `--zip`                   | Create a `.zip` archive (uses classic ZIP encryption)                     |
-| `--encrypt[=gpg|openssl]` | Encrypt using GPG (default) or OpenSSL                                    |
-| `--recipient <id>`        | GPG public key ID/email                                                   |
-| `--password <pass>`       | Password for encryption (or will prompt + confirm)                        |
-| `--version`               | Show version number and exit                                              |
+| `-n`                      | No gzip compression (create `.tar`)                                       |
+| `-s`                      | Simulate slow mode (for fun or testing)                                   |
+| `-x`                      | Open output folder when done                                              |
+| `-t`, `--tree`            | Show file structure preview                                               |
+| `--no-recursion`          | Shallow archive (no subdirectories)                                       |
+| `--hash`                  | Output SHA256 hash alongside archive                                      |
+| `--encrypt[=gpg|openssl]` | Encrypt archive with GPG or OpenSSL                                       |
+| `--recipient <id>`        | GPG recipient (email, fingerprint, or key ID)                             |
+| `--password <pass>`       | Password for encryption (or interactively prompted)                       |
+| `--zip`                   | Create a `.zip` archive (classic ZIP encryption with password support)    |
+| `--version`               | Print current version                                                     |
 | `-h`, `--help`            | Show help                                                                 |
 
 ---
 
 ## 🔐 Encryption Examples
 
-### GPG (asymmetric)
+### GPG (recipient-based public key)
 ```bash
-fancy-tar secure/ --encrypt=gpg --recipient you@example.com
+fancy-tar secure/ --encrypt=gpg --recipient your@email.com
 ```
 
-### GPG (symmetric)
+### GPG (symmetric encryption)
 ```bash
-fancy-tar secure/ --encrypt=gpg
-# Prompts for password and confirmation
+fancy-tar secrets/ --encrypt=gpg
+# Will prompt for password + confirmation
 ```
 
 ### OpenSSL
 ```bash
-fancy-tar secure/ --encrypt=openssl --password hunter2
+fancy-tar private/ --encrypt=openssl --password mypass
 ```
 
 ---
@@ -73,17 +72,15 @@ fancy-tar secure/ --encrypt=openssl --password hunter2
 ## 📦 ZIP Archives
 
 ```bash
-fancy-tar folder/ --zip
-fancy-tar folder/ --zip --password hunter2
+fancy-tar reports/ --zip
+fancy-tar reports/ --zip --password secret
+fancy-tar reports/ --zip --encrypt --password secret
 ```
 
-### ⚠️ ZIP Encryption Warning
-```
-🔐 Warning: Classic ZIP encryption is insecure.
-   • Easily broken with modern tools
-   • Not suitable for confidential data
-💡 Use GPG or OpenSSL for better security.
-```
+⚠️ Classic ZIP encryption is not secure:
+- Can be cracked easily
+- Not authenticated
+💡 Use `--encrypt=gpg` or `--encrypt=openssl` for strong encryption.
 
 ---
 

@@ -1,451 +1,250 @@
+
+confirm_password() {
+  local p1 p2
+  read -s -p "Enter password: " p1; echo
+  read -s -p "Confirm password: " p2; echo
+  if [[ "$p1" != "$p2" ]]; then
+    echo "❌ Passwords do not match. Please try again."
+    confirm_password
+  else
+    password="$p1"
+  fi
+}
 #!/bin/bash
-# fancy-tar v1.3.13
-echo Line 1
-echo Line 2
-echo Line 3
-echo Line 4
-echo Line 5
-echo Line 6
-echo Line 7
-echo Line 8
-echo Line 9
-echo Line 10
-echo Line 11
-echo Line 12
-echo Line 13
-echo Line 14
-echo Line 15
-echo Line 16
-echo Line 17
-echo Line 18
-echo Line 19
-echo Line 20
-echo Line 21
-echo Line 22
-echo Line 23
-echo Line 24
-echo Line 25
-echo Line 26
-echo Line 27
-echo Line 28
-echo Line 29
-echo Line 30
-echo Line 31
-echo Line 32
-echo Line 33
-echo Line 34
-echo Line 35
-echo Line 36
-echo Line 37
-echo Line 38
-echo Line 39
-echo Line 40
-echo Line 41
-echo Line 42
-echo Line 43
-echo Line 44
-echo Line 45
-echo Line 46
-echo Line 47
-echo Line 48
-echo Line 49
-echo Line 50
-echo Line 51
-echo Line 52
-echo Line 53
-echo Line 54
-echo Line 55
-echo Line 56
-echo Line 57
-echo Line 58
-echo Line 59
-echo Line 60
-echo Line 61
-echo Line 62
-echo Line 63
-echo Line 64
-echo Line 65
-echo Line 66
-echo Line 67
-echo Line 68
-echo Line 69
-echo Line 70
-echo Line 71
-echo Line 72
-echo Line 73
-echo Line 74
-echo Line 75
-echo Line 76
-echo Line 77
-echo Line 78
-echo Line 79
-echo Line 80
-echo Line 81
-echo Line 82
-echo Line 83
-echo Line 84
-echo Line 85
-echo Line 86
-echo Line 87
-echo Line 88
-echo Line 89
-echo Line 90
-echo Line 91
-echo Line 92
-echo Line 93
-echo Line 94
-echo Line 95
-echo Line 96
-echo Line 97
-echo Line 98
-echo Line 99
-echo Line 100
-echo Line 101
-echo Line 102
-echo Line 103
-echo Line 104
-echo Line 105
-echo Line 106
-echo Line 107
-echo Line 108
-echo Line 109
-echo Line 110
-echo Line 111
-echo Line 112
-echo Line 113
-echo Line 114
-echo Line 115
-echo Line 116
-echo Line 117
-echo Line 118
-echo Line 119
-echo Line 120
-echo Line 121
-echo Line 122
-echo Line 123
-echo Line 124
-echo Line 125
-echo Line 126
-echo Line 127
-echo Line 128
-echo Line 129
-echo Line 130
-echo Line 131
-echo Line 132
-echo Line 133
-echo Line 134
-echo Line 135
-echo Line 136
-echo Line 137
-echo Line 138
-echo Line 139
-echo Line 140
-echo Line 141
-echo Line 142
-echo Line 143
-echo Line 144
-echo Line 145
-echo Line 146
-echo Line 147
-echo Line 148
-echo Line 149
-echo Line 150
-echo Line 151
-echo Line 152
-echo Line 153
-echo Line 154
-echo Line 155
-echo Line 156
-echo Line 157
-echo Line 158
-echo Line 159
-echo Line 160
-echo Line 161
-echo Line 162
-echo Line 163
-echo Line 164
-echo Line 165
-echo Line 166
-echo Line 167
-echo Line 168
-echo Line 169
-echo Line 170
-echo Line 171
-echo Line 172
-echo Line 173
-echo Line 174
-echo Line 175
-echo Line 176
-echo Line 177
-echo Line 178
-echo Line 179
-echo Line 180
-echo Line 181
-echo Line 182
-echo Line 183
-echo Line 184
-echo Line 185
-echo Line 186
-echo Line 187
-echo Line 188
-echo Line 189
-echo Line 190
-echo Line 191
-echo Line 192
-echo Line 193
-echo Line 194
-echo Line 195
-echo Line 196
-echo Line 197
-echo Line 198
-echo Line 199
-echo Line 200
-echo Line 201
-echo Line 202
-echo Line 203
-echo Line 204
-echo Line 205
-echo Line 206
-echo Line 207
-echo Line 208
-echo Line 209
-echo Line 210
-echo Line 211
-echo Line 212
-echo Line 213
-echo Line 214
-echo Line 215
-echo Line 216
-echo Line 217
-echo Line 218
-echo Line 219
-echo Line 220
-echo Line 221
-echo Line 222
-echo Line 223
-echo Line 224
-echo Line 225
-echo Line 226
-echo Line 227
-echo Line 228
-echo Line 229
-echo Line 230
-echo Line 231
-echo Line 232
-echo Line 233
-echo Line 234
-echo Line 235
-echo Line 236
-echo Line 237
-echo Line 238
-echo Line 239
-echo Line 240
-echo Line 241
-echo Line 242
-echo Line 243
-echo Line 244
-echo Line 245
-echo Line 246
-echo Line 247
-echo Line 248
-echo Line 249
-echo Line 250
-echo Line 251
-echo Line 252
-echo Line 253
-echo Line 254
-echo Line 255
-echo Line 256
-echo Line 257
-echo Line 258
-echo Line 259
-echo Line 260
-echo Line 261
-echo Line 262
-echo Line 263
-echo Line 264
-echo Line 265
-echo Line 266
-echo Line 267
-echo Line 268
-echo Line 269
-echo Line 270
-echo Line 271
-echo Line 272
-echo Line 273
-echo Line 274
-echo Line 275
-echo Line 276
-echo Line 277
-echo Line 278
-echo Line 279
-echo Line 280
-echo Line 281
-echo Line 282
-echo Line 283
-echo Line 284
-echo Line 285
-echo Line 286
-echo Line 287
-echo Line 288
-echo Line 289
-echo Line 290
-echo Line 291
-echo Line 292
-echo Line 293
-echo Line 294
-echo Line 295
-echo Line 296
-echo Line 297
-echo Line 298
-echo Line 299
-echo Line 300
-echo Line 301
-echo Line 302
-echo Line 303
-echo Line 304
-echo Line 305
-echo Line 306
-echo Line 307
-echo Line 308
-echo Line 309
-echo Line 310
-echo Line 311
-echo Line 312
-echo Line 313
-echo Line 314
-echo Line 315
-echo Line 316
-echo Line 317
-echo Line 318
-echo Line 319
-echo Line 320
-echo Line 321
-echo Line 322
-echo Line 323
-echo Line 324
-echo Line 325
-echo Line 326
-echo Line 327
-echo Line 328
-echo Line 329
-echo Line 330
-echo Line 331
-echo Line 332
-echo Line 333
-echo Line 334
-echo Line 335
-echo Line 336
-echo Line 337
-echo Line 338
-echo Line 339
-echo Line 340
-echo Line 341
-echo Line 342
-echo Line 343
-echo Line 344
-echo Line 345
-echo Line 346
-echo Line 347
-echo Line 348
-echo Line 349
-echo Line 350
-echo Line 351
-echo Line 352
-echo Line 353
-echo Line 354
-echo Line 355
-echo Line 356
-echo Line 357
-echo Line 358
-echo Line 359
-echo Line 360
-echo Line 361
-echo Line 362
-echo Line 363
-echo Line 364
-echo Line 365
-echo Line 366
-echo Line 367
-echo Line 368
-echo Line 369
-echo Line 370
-echo Line 371
-echo Line 372
-echo Line 373
-echo Line 374
-echo Line 375
-echo Line 376
-echo Line 377
-echo Line 378
-echo Line 379
-echo Line 380
-echo Line 381
-echo Line 382
-echo Line 383
-echo Line 384
-echo Line 385
-echo Line 386
-echo Line 387
-echo Line 388
-echo Line 389
-echo Line 390
-echo Line 391
-echo Line 392
-echo Line 393
-echo Line 394
-echo Line 395
-echo Line 396
-echo Line 397
-echo Line 398
-echo Line 399
-echo Line 400
-echo Line 401
-echo Line 402
-echo Line 403
-echo Line 404
-echo Line 405
-echo Line 406
-echo Line 407
-echo Line 408
-echo Line 409
-echo Line 410
-echo Line 411
-echo Line 412
-echo Line 413
-echo Line 414
-echo Line 415
-echo Line 416
-echo Line 417
-echo Line 418
-echo Line 419
-echo Line 420
-echo Line 421
-echo Line 422
-echo Line 423
-echo Line 424
-echo Line 425
-echo Line 426
-echo Line 427
-echo Line 428
-echo Line 429
-echo Line 430
-echo Line 431
-echo Line 432
-echo Line 433
-echo Line 434
-echo Line 435
-echo Line 436
-echo Line 437
-echo Line 438
-echo Line 439
-echo Line 440
-echo Line 441
-echo Line 442
-echo Line 443
-echo Line 444
-echo Line 445
-echo Line 446
-echo Line 447
-echo Line 448
-echo Line 449
+
+VERSION="1.3.13"
+show_help() {
+  if [[ "$1" == "--version" ]]; then echo "fancy-tar $VERSION"; exit 0; fi
+  echo "Usage: fancy-tar [options] <files...>"
+  echo ""
+  echo "Options:"
+  echo "  -o <file>            Set output archive name (default: archive.tar.gz)"
+  echo "  -n                   No gzip compression (create .tar instead of .tar.gz)"
+  echo "  -s                   Enable slow mode (simulate slower compression)"
+  echo "  -x                   Open the output folder when done"
+  echo "  -t, --tree           Show hierarchical file structure before archiving"
+  echo "  --no-recursion       Do not include directory contents (shallow archive)"
+  echo "  --hash               Output SHA256 hash file alongside the archive"
+  echo "  --encrypt[=method]   Encrypt archive with gpg (default) or openssl"
+  echo "  --recipient <id>     Recipient ID for GPG public key encryption"
+
+      if [[ -z "$2" || "$2" == -* ]]; then
+        echo "❌ --recipient requires a value (email, fingerprint, or key ID)"
+        echo "🔑 Available recipients:"
+        gpg --list-keys --with-colons | grep '^uid' | cut -d: -f10
+        exit 1
+      fi
+  echo "  --password <pass>    Password to use for encryption (if supported)"
+  echo "  --zip                Create a .zip archive (with optional password)"
+  echo "  -h, --help           Show this help message"
+  exit 0
+}
+
+# Defaults
+
+# Handle ZIP password interaction
+if [[ "$use_zip" == true && -n "$encrypt_method" && -z "$password" ]]; then
+  confirm_password
+fi
+
+output=""
+gzip=true
+slow=false
+open_after=false
+no_recurse=false
+show_tree=false
+hash_output=false
+encrypt_method=""
+recipient=""
+password=""
+use_zip=false
+input_files=()
+
+# Argument parser
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o) output="$2"; shift 2 ;;
+    -n) gzip=false; shift ;;
+    -s) slow=true; shift ;;
+    -x) open_after=true; shift ;;
+    -t|--tree) show_tree=true; shift ;;
+    --no-recursion) no_recurse=true; shift ;;
+    --hash) hash_output=true; shift ;;
+    --encrypt=*) encrypt_method="${1#*=}"; shift ;;
+    --encrypt) encrypt_method="gpg"; shift ;;
+    --recipient=*) recipient="${1#*=}"; shift ;;
+    --recipient) recipient="$2"; shift 2 ;;
+    --password=*) password="${1#*=}"; shift ;;
+    --password) password="$2"; shift 2 ;;
+    --zip) use_zip=true; shift ;;
+    -h|--help) show_help ;;
+    -*)
+      echo "❌ Unknown option: $1"
+      show_help
+      ;;
+    *) input_files+=("$1"); shift ;;
+  esac
+done
+
+if [ ${#input_files[@]} -eq 0 ]; then
+  echo "No input files specified."
+  show_help
+fi
+
+# Determine archive name
+if [ -z "$output" ]; then
+  if [ "$use_zip" = true ]; then
+    output="archive.zip"
+  else
+    output="archive.tar.gz"
+  fi
+fi
+
+# Determine zip encryption warning
+if [[ "$use_zip" = true && -n "$password" ]]; then
+  echo ""
+  echo "🔐 Warning: Classic ZIP encryption is insecure."
+  echo "   • Easily broken with modern tools"
+  echo "   • No integrity or authenticity protection"
+  echo "   • Not suitable for confidential data"
+  echo ""
+  echo "💡 Use --encrypt=gpg or --encrypt=openssl for stronger encryption."
+  echo ""
+fi
+
+# Create archive
+start_time=$(date +%s)
+
+if [ "$use_zip" = true ]; then
+  zip_cmd="zip -r"
+  [ "$no_recurse" = true ] && zip_cmd="zip"
+  if [ -n "$password" ]; then
+    zip_cmd="$zip_cmd -e"
+  fi
+  echo "📦 Creating ZIP archive..."
+  if [ "$show_tree" = true ]; then
+    echo "📂 File hierarchy:"
+    for file in "${input_files[@]}"; do
+      find "$file" | awk -v base="$file" '
+      {
+        rel=substr($0, length(base)+2);
+        depth=gsub("/", "/");
+        indent=""; for(i=1;i<depth;i++) indent=indent "│   ";
+        if (rel != "") print indent "├── " rel;
+      }'
+    done
+    echo ""
+  fi
+  if [ -n "$password" ]; then
+    echo "$password" | $zip_cmd "$output" "${input_files[@]}" >/dev/null
+  else
+    $zip_cmd "$output" "${input_files[@]}"
+  fi
+else
+  extension=".tar.gz"
+  [ "$gzip" = false ] && extension=".tar"
+  [[ "$output" != *"$extension" ]] && output="${output}${extension}"
+
+  echo "📦 Calculating total size..."
+  total_files=$(find "${input_files[@]}" -type f | wc -l | tr -d ' ')
+  total_size=$(du -ch "${input_files[@]}" 2>/dev/null | grep total | awk '{print $1}')
+  [ -z "$total_size" ] && total_size="?"
+
+  echo "📁 Total files: $total_files"
+  echo "📦 Total size: $total_size"
+  echo "🗃  Output file: $output"
+  echo "🔧 Compression: $([ "$gzip" = true ] && echo "gzip (.tar.gz)" || echo "none (.tar)")"
+  echo "🔐 Encryption: $([ -n "$encrypt_method" ] && echo "$encrypt_method" || echo "none")"
+  echo "📂 Recursion: $([ "$no_recurse" = true ] && echo "disabled" || echo "enabled")"
+  echo ""
+
+  tmpfile="fancy-tar-tmp.tar"
+  rm -f "$tmpfile"
+  tar_opts=""
+  [ "$no_recurse" = true ] && tar_opts="--no-recursion"
+  file_list=$(find "${input_files[@]}" -type f)
+  echo "$file_list" > filelist.txt
+
+  echo "📦 Archiving files..."
+  count=0
+  while IFS= read -r file; do
+    count=$((count + 1))
+    echo "[$count/$total_files] Adding: $file"
+    [ "$slow" = true ] && sleep 0.25
+  done < filelist.txt
+
+  tar -cf "$tmpfile" $tar_opts --files-from=filelist.txt 2>&1 | tee /dev/stderr || { echo "❌ Tar failed. Cleaning up."; rm -f "$tmpfile"; exit 1; }
+  rm -f filelist.txt
+
+  if [ "$gzip" = true ]; then
+    echo "🗜 Compressing archive..."
+    pv "$tmpfile" | gzip > "$output" || { echo "❌ Compression failed. Cleaning up."; rm -f "$output" "$tmpfile"; exit 1; }
+    rm -f "$tmpfile"
+  else
+    mv "$tmpfile" "$output"
+  fi
+
+  # Encryption (tar path)
+  if [ -n "$encrypt_method" ]; then
+    case "$encrypt_method" in
+      gpg)
+        encrypted="${output}.gpg"
+        if [ -n "$recipient" ]; then
+          gpg --output "$encrypted" --encrypt --recipient "$recipient" "$output" || { echo "❌ GPG encryption failed"; rm -f "$encrypted"; exit 1; }
+        else
+          if [ -z "$password" ]; then
+            read -s -p "Enter password: " password
+            echo
+          fi
+          echo "$password" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$encrypted" "$output" || { echo "❌ GPG symmetric encryption failed"; rm -f "$encrypted"; exit 1; }
+        fi
+        rm -f "$output"
+        output="$encrypted"
+        ;;
+      openssl)
+        encrypted="${output}.enc"
+        if [ -z "$password" ]; then
+          read -s -p "Enter password: " password
+          echo
+        fi
+        openssl enc -aes-256-cbc -salt -in "$output" -out "$encrypted" -pass pass:"$password" || { echo "❌ OpenSSL encryption failed"; rm -f "$encrypted"; exit 1; }
+        rm -f "$output"
+        output="$encrypted"
+        ;;
+      *)
+        echo "❌ Unsupported encryption method: $encrypt_method"
+        rm -f "$output"
+        exit 1
+        ;;
+    esac
+    echo "🔐 Encrypted archive saved: $output"
+  fi
+fi
+
+# Hash output
+if [ "$hash_output" = true ]; then
+  shasum -a 256 "$output" > "$output.sha256"
+  echo "🔐 SHA256 hash saved to: $output.sha256"
+fi
+
+end_time=$(date +%s)
+elapsed=$((end_time - start_time))
+archive_size=$(du -h "$output" | cut -f1)
+
+echo ""
+echo "✅ Done! Archive created: $output"
+echo "📏 Archive size: $archive_size"
+echo "🕒 Total time elapsed: $((elapsed / 60))m $((elapsed % 60))s"
+
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send "fancy-tar" "Archive created: $output"
+elif command -v osascript >/dev/null 2>&1; then
+  osascript -e "display notification \"Archive created: $output\" with title \"fancy-tar\""
+fi
+
+if [ "$open_after" = true ]; then
+  folder=$(dirname "$output")
+  if command -v open >/dev/null; then open "$folder"
+  elif command -v xdg-open >/dev/null; then xdg-open "$folder"
+  fi
+fi
