@@ -13,5 +13,6 @@ _arguments \
   '--recipient[Recipient GPG key]' \
   '--password[Encryption password]' \
   '--zip[Create ZIP archive]' \
+  '--version[Show version]' \
   '-h[Show help]' \
   '--help[Show help]'

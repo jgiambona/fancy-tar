@@ -4,38 +4,15 @@ All notable changes to **fancy-tar** are documented here.
 
 ---
 
-## [v1.3.12] - 2025-03-26
+## [v1.3.13] - 2025-03-27
 
 ### Added
-- 📁 `--zip` option to create `.zip` archives
-- 🔐 Optional password-based encryption for ZIP files
-- ⚠️ Security warning shown for classic ZIP encryption (insecure)
-- 🧠 Works with existing options: `--hash`, `--tree`, `--password`, `--no-recursion`
-- 📂 ZIP archives use `zip -r` and fall back gracefully
-
-### Installer Notes
-- Will check for the `zip` CLI tool
-- ZIP output is compatible with most archive tools
-
----
-
-## [v1.3.11] - 2025-03-26
+- `--version` flag to show current version (e.g. fancy-tar 1.3.13)
+- Interactive password prompt now asks for confirmation
 
 ### Fixed
-- GPG encryption defaults to symmetric mode if `--recipient` is omitted
-- Password prompt shown when needed
-- Clean fallback and secure encryption handling
+- `--encrypt=gpg --recipient` without a value now errors and shows available GPG keys
+- `--zip --encrypt` now correctly prompts for password
+- `--zip --password` no longer hangs or prompts twice
+- Incomplete archive files are properly cleaned up on any error
 
----
-
-## [v1.3.10] - 2025-03-26
-
-- Fixed argument parsing and encryption file cleanup
-
-## [v1.3.9] - 2025-03-26
-
-- File extension logic for encrypted files
-
-## [v1.3.8] - Not Tagged
-
-- Initial encryption and hash support

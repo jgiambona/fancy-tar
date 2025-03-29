@@ -9,4 +9,5 @@ complete -c fancy-tar -l encrypt -d "Encrypt archive (gpg/openssl)" -r
 complete -c fancy-tar -l recipient -d "Recipient for GPG" -r
 complete -c fancy-tar -l password -d "Encryption password" -r
 complete -c fancy-tar -l zip -d "Create ZIP archive"
+complete -c fancy-tar -l version -d "Show version"
 complete -c fancy-tar -s h -l help -d "Show help"
