@@ -156,12 +156,12 @@ confirm_password() {
 }
 
 # Handle ZIP password interaction
-if [[ "$use_zip" == true && -z "$password" ]]; then
+if [[ "$use_zip" == true && "$encrypt_method" == "zip" && -z "$password" ]]; then
   confirm_password
 fi
 
 # Handle encryption password interaction
-if [[ -n "$encrypt_method" && -z "$password" ]]; then
+if [[ -n "$encrypt_method" && "$encrypt_method" != "zip" && -z "$password" ]]; then
   confirm_password
 fi
 
