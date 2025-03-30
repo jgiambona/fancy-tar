@@ -1,6 +1,5 @@
-# fancy-tar 1.4.6
+# fancy-tar 1.4.7
 
-Fixes:
-- `--version` and `--self-test` working again
-- Executable permission enforced
-- Ready for Homebrew and automation
+- Fixes version display
+- Adds built-in self-test
+- Ensures Homebrew installs executable script

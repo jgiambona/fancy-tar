@@ -1,4 +1,4 @@
-## [1.4.6] - 2025-03-30
-- Fix: `--version` and `--self-test` recognition
-- Pre-packaging `chmod +x` fix
-- CI-friendly
+## [1.4.7] - 2025-03-30
+- Fix: correct version number
+- Fix: built-in --self-test
+- Fix: executable permission in archive
