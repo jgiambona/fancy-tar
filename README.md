@@ -1,3 +1,3 @@
-# fancy-tar 1.4.3
+# fancy-tar 1.4.5
 
-Includes exclude pattern, self-test, error handling, compression ratio, password confirmation, and more.
+Fixes for --version, --password hang, syntax error, adds 7z support.

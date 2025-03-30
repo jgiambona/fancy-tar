@@ -1,1 +1,1 @@
-# bash completion for fancy-tar
+# bash completion placeholder
