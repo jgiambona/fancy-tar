@@ -1,1 +1,1 @@
-# fish completion
+complete -c fancy-tar -l help -d "Show help"

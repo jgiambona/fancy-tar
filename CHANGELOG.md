@@ -1,7 +1,5 @@
-## [v1.4.2] - 2025-03-30
-- Add --exclude
-- Add --self-test
+## [1.4.3] - 2025-03-30
+- Added: `--exclude`, `--self-test`, compression ratio
 - Password confirmation
-- Compression ratio
 - Better error handling
-- chmod fix
+- Installer chmod fix

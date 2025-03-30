@@ -1,3 +1,3 @@
-# fancy-tar 1.4.2
+# fancy-tar 1.4.3
 
-Includes: exclude patterns, self-test, password confirmation, compression ratio, improved error handling.
+Includes exclude pattern, self-test, error handling, compression ratio, password confirmation, and more.

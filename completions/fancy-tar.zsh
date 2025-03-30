@@ -1,1 +1,2 @@
-# zsh completion
+#compdef fancy-tar
+_arguments "*: :->args"
