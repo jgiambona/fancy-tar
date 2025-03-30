@@ -13,6 +13,26 @@ confirm_password() {
 #!/bin/bash
 
 VERSION="1.4.1"
+
+# Early flag handling
+for arg in "$@"; do
+  case "$arg" in
+    -v|--version)
+      echo "fancy-tar $VERSION"
+      exit 0
+      ;;
+    --self-test)
+      SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+      if [ -f "$SCRIPT_DIR/../../tests/test.sh" ]; then
+        bash "$SCRIPT_DIR/../../tests/test.sh"
+        exit $?
+      else
+        echo "⚠️  Self-test script not found."
+        exit 1
+      fi
+      ;;
+  esac
+done
 show_help() {
   if [[ "$1" == "--version" ]]; then echo "fancy-tar $VERSION"; exit 0; fi
   echo "Usage: fancy-tar [options] <files...>"

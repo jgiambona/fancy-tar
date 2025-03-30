@@ -1,3 +1,6 @@
-# fancy-tar 1.4.5
+# fancy-tar 1.4.6
 
-Fixes for --version, --password hang, syntax error, adds 7z support.
+Fixes:
+- `--version` and `--self-test` working again
+- Executable permission enforced
+- Ready for Homebrew and automation

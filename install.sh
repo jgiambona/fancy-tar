@@ -1,1 +1,1 @@
-echo 'Install script placeholder for 1.4.5'
+echo 'Installer patched for 1.4.6 with chmod +x'
