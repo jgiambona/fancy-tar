@@ -1,3 +1,6 @@
+## [1.6.1] - 2024-03-30
+- ✅ Fixed ZIP password prompts to only trigger when encryption is requested
+
 ## [1.6.0] - 2024-03-30
 - ✅ Improved self-test with interactive password prompts
 - ✅ Added automatic cleanup of temporary files
