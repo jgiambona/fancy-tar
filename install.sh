@@ -35,4 +35,3 @@ cp completions/fancy-tar.fish "$FISH_COMPLETION_DIR/fancy-tar.fish"
 
 echo "✅ fancy-tar installed!"
 echo "💡 Try: fancy-tar -h or fancy-tar -<TAB> for autocompletion"
-

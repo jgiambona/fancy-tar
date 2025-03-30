@@ -12,7 +12,7 @@ confirm_password() {
 }
 #!/bin/bash
 
-VERSION="1.4.0"
+VERSION="1.4.1"
 show_help() {
   if [[ "$1" == "--version" ]]; then echo "fancy-tar $VERSION"; exit 0; fi
   echo "Usage: fancy-tar [options] <files...>"

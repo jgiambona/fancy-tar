@@ -1,6 +1,6 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.4.0" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.4.1" "User Commands"
 .SH NAME
-fancy-tar \- smart archive tool with ZIP, TAR, 7z compression, encryption, and hashing
+fancy-tar \- smart archive tool with TAR, ZIP, 7z compression, encryption, and hashing
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
@@ -48,13 +48,5 @@ Show version and exit
 .B \-h, \--help
 Display help
 
-.SH SECURITY
-ZIP encryption is weak and should be avoided for sensitive files. Use `--encrypt=gpg`, `--encrypt=openssl`, or `--encrypt=7z` for strong encryption.
-
-.SH EXAMPLES
-Create encrypted archive with 7z:
-.B
-fancy-tar myfolder --encrypt=7z --password
-
 .SH VERSION
-fancy-tar 1.4.0
+fancy-tar 1.4.1

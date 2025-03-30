@@ -4,15 +4,9 @@ All notable changes to **fancy-tar** are documented here.
 
 ---
 
-## [v1.4.0] - 2025-03-30
+## [v1.4.1] - 2025-03-30
 
-### Added
-- ✅ Support for `.7z` archives with AES encryption
-- 🧠 `--encrypt=7z` flag now supported
-- 🔐 Password-protected 7z archives with `7z a -p`
-- 🔍 Detects if `7z`/`p7zip` is missing and warns user
-- 📦 Automatically changes output extension to `.7z` if 7z encryption is used
-
-### Improved
-- 🎯 Better password prompt integration for all encryption methods
-- 🔄 Maintains compatibility with previous `--zip`, `--encrypt=gpg`, and `--encrypt=openssl` flows
+### Fixed
+- Ensure `fancy-tar` script is marked executable during install
+- Homebrew formula sets executable permissions (`chmod +x`)
+- Installer script now warns if a conflicting `fancy-tar` binary is found earlier in the user's `$PATH`
