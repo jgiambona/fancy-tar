@@ -12,6 +12,7 @@ BIN_DIR="$BREW_PREFIX/bin"
 MAN_DIR="$BREW_PREFIX/share/man/man1"
 BASH_COMPLETION_DIR="$BREW_PREFIX/share/bash-completion/completions"
 ZSH_COMPLETION_DIR="$BREW_PREFIX/share/zsh/site-functions"
+chmod +x "$BIN_DIR/fancy-tar"
 FISH_COMPLETION_DIR="$BREW_PREFIX/share/fish/vendor_completions.d"
 
 # 1. Install main script
