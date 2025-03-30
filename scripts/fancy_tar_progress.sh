@@ -12,7 +12,7 @@ confirm_password() {
 }
 #!/bin/bash
 
-VERSION="1.3.13"
+VERSION="1.4.0"
 show_help() {
   if [[ "$1" == "--version" ]]; then echo "fancy-tar $VERSION"; exit 0; fi
   echo "Usage: fancy-tar [options] <files...>"
@@ -184,7 +184,23 @@ else
     mv "$tmpfile" "$output"
   fi
 
-  # Encryption (tar path)
+  # Encrypt
+# Handle 7z encryption
+if [[ "$encrypt_method" == "7z" || "$use_7z" == true ]]; then
+  if ! command -v 7z >/dev/null 2>&1; then
+    echo "❌ 7z (p7zip) is not installed. Please install it to use --encrypt=7z or --7z."
+    exit 1
+  fi
+
+  if [ -z "$password" ]; then confirm_password; fi
+  output="${output%.*}.7z"
+  7z a -t7z -p"$password" -mhe=on "$output" "${input_files[@]}" || {
+    echo "❌ 7z compression failed"; rm -f "$output"; exit 1;
+  }
+  echo "🔐 Encrypted archive saved: $output"
+  success=true
+fi
+ion (tar path)
   if [ -n "$encrypt_method" ]; then
     case "$encrypt_method" in
       gpg)

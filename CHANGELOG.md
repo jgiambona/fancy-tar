@@ -4,14 +4,15 @@ All notable changes to **fancy-tar** are documented here.
 
 ---
 
-## [v1.3.13] - 2025-03-30
+## [v1.4.0] - 2025-03-30
 
 ### Added
-- `--version` flag to show current version
-- Password confirmation prompt for interactive encryption
+- ✅ Support for `.7z` archives with AES encryption
+- 🧠 `--encrypt=7z` flag now supported
+- 🔐 Password-protected 7z archives with `7z a -p`
+- 🔍 Detects if `7z`/`p7zip` is missing and warns user
+- 📦 Automatically changes output extension to `.7z` if 7z encryption is used
 
-### Fixed
-- `--recipient` with no value now triggers an error and lists available GPG keys
-- `--zip --encrypt` now correctly prompts for password
-- `--zip --password` no longer hangs or double-prompts
-- Incomplete archive files are deleted automatically on failure
+### Improved
+- 🎯 Better password prompt integration for all encryption methods
+- 🔄 Maintains compatibility with previous `--zip`, `--encrypt=gpg`, and `--encrypt=openssl` flows

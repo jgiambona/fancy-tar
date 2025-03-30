@@ -9,7 +9,7 @@ _arguments \
   '--tree[Tree preview]' \
   '--no-recursion[Do not include subfolders]' \
   '--hash[Generate SHA256 checksum]' \
-  '--encrypt=[Encryption method]:method:(gpg openssl)' \
+  '--encrypt=[Encryption method]:method:(gpg openssl 7z)' \
   '--recipient[Recipient GPG key]' \
   '--password[Password for encryption]' \
   '--zip[Create ZIP archive]' \

@@ -1,71 +1,60 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.13" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.4.0" "User Commands"
 .SH NAME
-fancy-tar \- smart archive tool with ZIP/tar compression, encryption, and hashing
+fancy-tar \- smart archive tool with ZIP, TAR, 7z compression, encryption, and hashing
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
 .SH DESCRIPTION
-\fBfancy-tar\fR is a Bash-based tool for creating archives with optional compression, encryption, hash output, and file tree previews. It supports .tar.gz, .zip, .gpg, and .enc formats.
+\fBfancy-tar\fR is a Bash tool for creating `.tar.gz`, `.zip`, or `.7z` archives with optional encryption, SHA256 hashing, and file tree previews.
 
 .SH OPTIONS
 .TP
 .B \-o \fIFILE\fR
-Specify output archive name
+Specify output archive filename
 .TP
 .B \-n
-Do not compress with gzip
+Disable gzip compression (outputs .tar)
 .TP
 .B \-s
-Enable slow-mode
+Enable slow-mode (simulated)
 .TP
 .B \-x
-Open the output folder after archiving
+Open output folder on completion
 .TP
 .B \-t, \--tree
-Preview file tree before archiving
+Preview files in tree format
 .TP
 .B \--no-recursion
-Archive only top-level files
+Only archive top-level files
 .TP
 .B \--hash
-Output SHA256 checksum file
-.TP
-.B \--encrypt[=gpg|openssl]
-Encrypt archive with GPG or OpenSSL
-.TP
-.B \--recipient \fIID\fR
-GPG recipient for public key encryption
-.TP
-.B \--password \fIPASS\fR
-Encryption password (prompted if omitted)
+Generate a .sha256 checksum
 .TP
 .B \--zip
-Create a ZIP archive (classic password encryption)
+Create a .zip archive (classic password encryption)
+.TP
+.B \--encrypt=\fImethod\fR
+Encrypt using one of: gpg, openssl, 7z
+.TP
+.B \--recipient \fIid\fR
+Specify recipient for GPG encryption
+.TP
+.B \--password \fIpass\fR
+Password for encryption (prompts if omitted)
 .TP
 .B \--version
-Show current version and exit
+Show version and exit
 .TP
 .B \-h, \--help
-Show help and usage
+Display help
 
 .SH SECURITY
-GPG and OpenSSL provide strong encryption. ZIP password protection is insecure and should not be used for sensitive files.
+ZIP encryption is weak and should be avoided for sensitive files. Use `--encrypt=gpg`, `--encrypt=openssl`, or `--encrypt=7z` for strong encryption.
 
 .SH EXAMPLES
-.TP
-Encrypt using GPG (symmetric):
+Create encrypted archive with 7z:
 .B
-fancy-tar folder --encrypt=gpg
-
-.TP
-Encrypt with OpenSSL:
-.B
-fancy-tar folder --encrypt=openssl --password secret
-
-.TP
-ZIP archive with password:
-.B
-fancy-tar folder --zip --password secret
+fancy-tar myfolder --encrypt=7z --password
 
 .SH VERSION
-fancy-tar 1.3.13
+fancy-tar 1.4.0
