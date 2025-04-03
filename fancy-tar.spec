@@ -1,5 +1,5 @@
 Name:           fancy-tar
-Version:        1.0.0
+Version:        1.6.3
 Release:        1%{?dist}
 Summary:        Enhanced tar with progress bar and ETA
 
@@ -37,5 +37,10 @@ install -m 0644 completions/fancy-tar.fish %{buildroot}%{_datadir}/fish/vendor_c
 %{_datadir}/fish/vendor_completions.d/fancy-tar.fish
 
 %changelog
-* Tue Mar 25 2025 Jason Giambona <jgiambona@users.noreply.github.com> - 1.0.0-1
-- Initial package
+* Tue Mar 25 2025 Jason Giambona <jgiambona@users.noreply.github.com> - 1.6.3-1
+- Added password masking for interactive password prompts
+- Improved password handling with proper terminal settings restoration
+- Added password strength validation in interactive mode only
+
+* Tue Mar 25 2025 Jason Giambona <jgiambona@users.noreply.github.com> - 1.6.2-1
+- Removed asciinema demos

@@ -1,3 +1,11 @@
+## [1.6.3] - 2024-03-30
+- ✅ Added password masking for interactive password prompts
+- ✅ Improved password handling with proper terminal settings restoration
+- ✅ Added password strength validation in interactive mode only
+
+## [1.6.2] - 2024-03-30
+- ✅ Updated documentation
+
 ## [1.6.1] - 2024-03-30
 - ✅ Fixed ZIP password prompts to only trigger when encryption is requested
 

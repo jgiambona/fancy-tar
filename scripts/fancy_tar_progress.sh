@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.6.1"
+VERSION="1.6.3"
 
 # Version flag (exit early)
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
@@ -92,6 +92,20 @@ password=""
 use_zip=false
 input_files=()
 
+# Store terminal settings for password prompts
+stty_settings=""
+
+# Cleanup function
+cleanup() {
+  # Restore terminal settings if they were changed
+  if [[ -n "$stty_settings" ]]; then
+    stty "$stty_settings" 2>/dev/null
+  fi
+}
+
+# Set up cleanup trap
+trap cleanup EXIT INT TERM
+
 # Argument parser
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -145,14 +159,53 @@ confirm_password() {
   fi
   
   local p1 p2
-  read -s -p "Enter password: " p1; echo
-  read -s -p "Confirm password: " p2; echo
-  if [[ "$p1" != "$p2" ]]; then
-    echo "❌ Passwords do not match. Please try again."
-    confirm_password
-  else
+  # Save current terminal settings
+  stty_settings=$(stty -g)
+  # Disable echo
+  stty -echo
+  
+  while true; do
+    # Read passwords with error handling
+    if ! read -p "Enter password: " p1; then
+      stty "$stty_settings"
+      echo "❌ Error reading password"
+      return 1
+    fi
+    echo
+    
+    if ! read -p "Confirm password: " p2; then
+      stty "$stty_settings"
+      echo "❌ Error reading password"
+      return 1
+    fi
+    echo
+    
+    # Restore terminal settings
+    stty "$stty_settings"
+    
+    # Only validate password strength in interactive mode
+    if [[ -z "$password" ]]; then
+      # Validate password length
+      if [[ ${#p1} -lt 8 ]]; then
+        echo "❌ Password must be at least 8 characters long"
+        continue
+      fi
+      
+      # Basic password strength check
+      if [[ ! "$p1" =~ [A-Z] || ! "$p1" =~ [a-z] || ! "$p1" =~ [0-9] ]]; then
+        echo "❌ Password should contain at least one uppercase letter, one lowercase letter, and one number"
+        continue
+      fi
+    fi
+    
+    if [[ "$p1" != "$p2" ]]; then
+      echo "❌ Passwords do not match. Please try again."
+      continue
+    fi
+    
     password="$p1"
-  fi
+    break
+  done
 }
 
 # Handle ZIP password interaction
