@@ -1,15 +1,15 @@
-.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.3.13" "User Commands"
+.TH FANCY-TAR 1 "March 2025" "fancy-tar 1.6.4" "User Commands"
 .SH NAME
-fancy-tar \- smart archive tool with ZIP/tar compression, encryption, and hashing
+fancy-tar \- smart archive tool with ZIP/tar/7z compression, encryption, and hashing
 .SH SYNOPSIS
 .B fancy-tar
 [\fIoptions\fR] \fIfile1\fR [file2 ...]
 .SH DESCRIPTION
-\fBfancy-tar\fR is a Bash-based tool for creating archives with optional compression, encryption, hash output, and file tree previews. It supports .tar.gz, .zip, .gpg, and .enc formats.
+\fBfancy-tar\fR is a Bash-based tool for creating archives with optional compression, encryption, hash output, and file tree previews. It supports .tar.gz, .zip, .7z, .gpg, and .enc formats. Features include progress reporting, archive verification, and split archive support.
 
 .SH OPTIONS
 .TP
-.B \-o \fIFILE\fR
+.B \-o, \--output \fIFILE\fR
 Specify output archive name
 .TP
 .B \-n
@@ -24,7 +24,7 @@ Open the output folder after archiving
 .B \-t, \--tree
 Preview file tree before archiving
 .TP
-.B \--no-recursion
+.B \--no-recurse
 Archive only top-level files
 .TP
 .B \--hash
@@ -39,8 +39,20 @@ GPG recipient for public key encryption
 .B \--password \fIPASS\fR
 Encryption password (prompted if omitted)
 .TP
+.B \--verify
+Verify archive integrity after creation
+.TP
+.B \--split-size=\fISIZE\fR
+Split archive into parts of specified size (e.g., 100M, 1G)
+.TP
 .B \--zip
 Create a ZIP archive (classic password encryption)
+.TP
+.B \--7z
+Create a 7z archive (AES-256 encryption)
+.TP
+.B \--compression=\fI0-9\fR
+Set 7z compression level (0=store, 9=ultra)
 .TP
 .B \--version
 Show current version and exit
@@ -48,10 +60,33 @@ Show current version and exit
 .B \-h, \--help
 Show help and usage
 
+.SH PROGRESS REPORTING
+The tool shows detailed progress information including:
+.IP \(bu 2
+Total file count and size
+.IP \(bu 2
+Current progress with percentage
+.IP \(bu 2
+Transfer speed
+.IP \(bu 2
+Estimated time remaining
+.IP \(bu 2
+Final compression ratio
+
 .SH SECURITY
-GPG and OpenSSL provide strong encryption. ZIP password protection is insecure and should not be used for sensitive files.
+GPG and OpenSSL provide strong encryption. ZIP password protection is insecure and should not be used for sensitive files. 7z archives use AES-256 encryption when a password is provided.
 
 .SH EXAMPLES
+.TP
+Create and verify a split archive:
+.B
+fancy-tar folder --split-size=100M --verify -o archive.tar.gz
+
+.TP
+Create a 7z archive with high compression:
+.B
+fancy-tar folder --7z --compression=9 -o archive.7z
+
 .TP
 Encrypt using GPG (symmetric):
 .B
@@ -68,4 +103,4 @@ ZIP archive with password:
 fancy-tar folder --zip --password secret
 
 .SH VERSION
-fancy-tar 1.3.13
+fancy-tar 1.6.4

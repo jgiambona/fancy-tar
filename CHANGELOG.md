@@ -1,7 +1,25 @@
+## [1.6.4] - 2024-03-30
+### Added
+- Progress indication for ZIP operations using `pv`
+- Enhanced progress reporting for all archive types
+- Improved error handling for progress bar calculations
+
+### Changed
+- Optimized progress bar size calculations
+- Enhanced file size detection for all archive types
+- Improved cleanup of temporary files
+
 ## [1.6.3] - 2024-03-30
-- ✅ Added password masking for interactive password prompts
-- ✅ Improved password handling with proper terminal settings restoration
-- ✅ Added password strength validation in interactive mode only
+### Added
+- Progress indication for 7z and ZIP operations using `pv`
+- Compression level warnings for 7z archives
+- Enhanced help text with detailed compression level information
+- Improved documentation for 7z features
+
+### Changed
+- Default 7z compression level set to 5 (normal)
+- Updated README with compression level details
+- Enhanced progress reporting for all archive types
 
 ## [1.6.2] - 2024-03-30
 - ✅ Updated documentation
