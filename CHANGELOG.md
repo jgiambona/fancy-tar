@@ -1,3 +1,15 @@
+## [1.6.5] - 2024-03-30
+### Added
+- Multi-architecture support for Debian packages (amd64, arm64)
+- Package verification for both RPM and Debian packages
+- Automated release notes generation
+- Enhanced GitHub Actions workflow
+
+### Changed
+- Improved Debian package build process
+- Updated documentation for multi-arch support
+- Enhanced package verification steps
+
 ## [1.6.4] - 2024-03-30
 ### Added
 - Progress indication for ZIP operations using `pv`
