@@ -90,7 +90,6 @@ This document tracks planned features and improvements for future versions of fa
     - Add support for file manager integration
     - Add support for cloud storage integration
     - Add support for backup scheduling
-    - Add Debian package installer
     - Add support for other package managers
 
 ## Documentation and Testing
