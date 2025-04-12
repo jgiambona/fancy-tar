@@ -8,6 +8,9 @@ on:
 jobs:
   package:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
 
     steps:
       - name: 📦 Checkout repository
@@ -36,7 +39,7 @@ jobs:
           sed -i "s|^Source0:.*|Source0:        https://github.com/jgiambona/fancy-tar/releases/download/v${VERSION}/fancy-tar-${VERSION}.tar.gz|" fancy-tar.spec
 
       - name: 🧰 Install RPM build tools
-        run: sudo apt-get update && sudo apt-get install -y rpm
+        run: sudo apt-get update && sudo apt-get install -y rpm rpmlint
 
       - name: 🏗 Build RPM package
         run: |
@@ -46,6 +49,54 @@ jobs:
           rpmbuild -ba ~/rpmbuild/SPECS/fancy-tar.spec
           find ~/rpmbuild/RPMS -name "*.rpm" -exec cp {} dist/ \;
 
+      - name: 🔍 Verify RPM package
+        run: |
+          for rpm in dist/*.rpm; do
+            rpmlint $rpm || true
+          done
+
+      - name: 🧰 Install Debian build tools
+        run: sudo apt-get update && sudo apt-get install -y debhelper devscripts lintian
+
+      - name: 🏗 Build Debian package
+        run: |
+          # Copy source files to build directory
+          mkdir -p build/fancy-tar-${VERSION}/debian
+          cp -r debian/* build/fancy-tar-${VERSION}/debian/
+          cp scripts/fancy_tar_progress.sh build/fancy-tar-${VERSION}/
+          cp -r docs completions build/fancy-tar-${VERSION}/
+          
+          # Update changelog with current version
+          cd build/fancy-tar-${VERSION}
+          dch -v ${VERSION}-1 "Release v${VERSION}"
+          
+          # Build the package
+          dpkg-buildpackage -us -uc -a${{ matrix.arch }}
+          
+          # Copy the built package to dist directory
+          cd ..
+          cp *.deb ../dist/
+
+      - name: 🔍 Verify Debian package
+        run: |
+          for deb in dist/*.deb; do
+            lintian $deb || true
+          done
+
+      - name: 📝 Generate release notes
+        run: |
+          echo "## fancy-tar ${VERSION}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### Changes" >> release_notes.md
+          echo "" >> release_notes.md
+          git log --pretty=format:"- %s" $(git describe --tags --abbrev=0)..HEAD >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Packages" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- Source tarball: fancy-tar-${VERSION}.tar.gz" >> release_notes.md
+          echo "- RPM packages: $(ls dist/*.rpm | xargs -n1 basename | tr '\n' ' ')" >> release_notes.md
+          echo "- Debian packages: $(ls dist/*.deb | xargs -n1 basename | tr '\n' ' ')" >> release_notes.md
+
       - name: 🛠 Install GitHub CLI
         run: sudo apt-get install -y gh
 
@@ -54,7 +105,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           TAG="v$VERSION"
-          gh release view "$TAG" || gh release create "$TAG" --title "fancy-tar $TAG" --notes "Automated release for fancy-tar"
+          gh release view "$TAG" || gh release create "$TAG" --title "fancy-tar $TAG" --notes-file release_notes.md
 
       - name: 📤 Upload release assets using GitHub CLI
         env:
@@ -65,6 +116,7 @@ jobs:
             dist/fancy-tar-${VERSION}.tar.gz \
             dist/sha256.txt \
             dist/*.rpm \
+            dist/*.deb \
             --clobber
 
       - name: 🧹 Cleanup
