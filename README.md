@@ -30,6 +30,19 @@
 brew install jgiambona/fancy-tar/fancy-tar
 ```
 
+### Via Debian Package (Debian/Ubuntu)
+
+```bash
+# Download the Debian package from the latest release
+curl -LO https://github.com/jgiambona/fancy-tar/releases/download/v1.6.4/fancy-tar_1.6.4-1_all.deb
+
+# Install using dpkg
+sudo dpkg -i fancy-tar_1.6.4-1_all.deb
+
+# Install dependencies if needed
+sudo apt-get install -f
+```
+
 ### Via RPM (Fedora/RHEL)
 
 ```bash

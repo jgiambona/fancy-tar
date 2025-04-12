@@ -1,0 +1,26 @@
+Source: fancy-tar
+Section: utils
+Priority: optional
+Maintainer: Jason Giambona <jason@giambona.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/jgiambona/fancy-tar
+
+Package: fancy-tar
+Architecture: all
+Depends: ${misc:Depends}, bash, pv, gnu-tar, coreutils, p7zip-full
+Recommends: gpg, openssl
+Description: Smart archive tool with progress bars and encryption
+ fancy-tar is a smarter, friendlier tar tool with progress bars, tree views,
+ encryption, ZIP support, and more. It supports creating .tar, .tar.gz, .zip,
+ and .7z archives with optional encryption using GPG, OpenSSL, or 7z's built-in
+ AES-256 encryption.
+ .
+ Features include:
+  * Progress bars for archive operations
+  * Tree-style file previews
+  * Multiple encryption options
+  * Secure password handling
+  * SHA256 checksum generation
+  * Split archive support
+  * Archive verification 

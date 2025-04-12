@@ -1,0 +1,8 @@
+fancy-tar (1.6.4-1) unstable; urgency=medium
+
+  * Initial Debian package release
+  * Add Debian package support
+  * Update documentation for Debian installation
+  * Add proper system paths for Debian systems
+
+ -- Jason Giambona <jason@giambona.com>  Sat, 30 Mar 2024 12:00:00 +0000 

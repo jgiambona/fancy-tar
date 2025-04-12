@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+%:
+	dh $@
+
+override_dh_auto_install:
+	dh_auto_install
+	mkdir -p debian/fancy-tar/usr/local/bin
+	mkdir -p debian/fancy-tar/usr/local/share/man/man1
+	mkdir -p debian/fancy-tar/etc/bash_completion.d
+	mkdir -p debian/fancy-tar/usr/local/share/zsh/site-functions
+	mkdir -p debian/fancy-tar/usr/local/share/fish/vendor_completions.d
+	
+	# Install main script
+	cp scripts/fancy_tar_progress.sh debian/fancy-tar/usr/local/bin/fancy-tar
+	chmod 755 debian/fancy-tar/usr/local/bin/fancy-tar
+	
+	# Install man page
+	cp docs/fancy-tar.1 debian/fancy-tar/usr/local/share/man/man1/
+	gzip -9 debian/fancy-tar/usr/local/share/man/man1/fancy-tar.1
+	
+	# Install completions
+	cp completions/fancy-tar.bash debian/fancy-tar/etc/bash_completion.d/fancy-tar
+	cp completions/fancy-tar.zsh debian/fancy-tar/usr/local/share/zsh/site-functions/_fancy-tar
+	cp completions/fancy-tar.fish debian/fancy-tar/usr/local/share/fish/vendor_completions.d/fancy-tar.fish 
