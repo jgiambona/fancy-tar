@@ -1,3 +1,12 @@
+fancy-tar (1.6.7-1) stable; urgency=medium
+
+  * Release v1.6.7
+  * Enhance release workflow with multi-arch builds
+  * Add package verification steps
+  * Improve release notes generation
+
+ -- Jason Giambona <jgiambona@users.noreply.github.com>  Tue, 26 Mar 2024 12:00:00 -0400
+
 fancy-tar (1.6.4-1) unstable; urgency=medium
 
   * Initial Debian package release

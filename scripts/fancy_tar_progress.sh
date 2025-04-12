@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.6.4"
+VERSION="1.6.7"
 
 # Version flag (exit early)
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then

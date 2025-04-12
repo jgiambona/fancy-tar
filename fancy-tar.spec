@@ -1,5 +1,5 @@
 Name:           fancy-tar
-Version:        1.6.3
+Version:        1.6.7
 Release:        1%{?dist}
 Summary:        Enhanced tar with progress bar and ETA
 
