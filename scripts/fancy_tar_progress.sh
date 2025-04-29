@@ -1,5 +1,200 @@
 #!/bin/bash
-VERSION="1.6.7"
+VERSION="1.7.2"
+
+# Function to get next available filename
+get_next_filename() {
+    local base="$1"
+    local ext="${base##*.}"
+    local name="${base%.*}"
+    local counter=1
+    local new_name="$base"
+    
+    while [ -e "$new_name" ]; do
+        new_name="${name}_${counter}.${ext}"
+        counter=$((counter + 1))
+    done
+    
+    echo "$new_name"
+}
+
+# Function to convert bytes to human readable format
+human_readable_size() {
+    local bytes=$1
+    local units=("B" "KB" "MB" "GB" "TB" "PB")
+    local unit=0
+    local size=$bytes
+    
+    while (( ${size%.*} > 1024 )) && ((unit < ${#units[@]} - 1)); do
+        size=$(echo "scale=1; $size / 1024" | bc)
+        unit=$((unit + 1))
+    done
+    
+    # Round to one decimal place
+    size=$(printf "%.1f" $size)
+    echo "${size}${units[$unit]}"
+}
+
+# Function to calculate total size
+calculate_total_size() {
+    local total=0
+    for file in "${input_files[@]}"; do
+        if [ -d "$file" ]; then
+            if [ "$no_recurse" = true ]; then
+                # Only count files in current directory
+                while IFS= read -r -d '' f; do
+                    size=$(stat -f %z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
+                    if [ -n "$size" ] && [ "$size" -gt 0 ]; then
+                        total=$((total + size))
+                    fi
+                done < <(find "$file" -maxdepth 1 -type f -print0)
+            else
+                # Count all files recursively
+                while IFS= read -r -d '' f; do
+                    size=$(stat -f %z "$f" 2>/dev/null || stat --format=%s "$f" 2>/dev/null || echo 0)
+                    if [ -n "$size" ] && [ "$size" -gt 0 ]; then
+                        total=$((total + size))
+                    fi
+                done < <(find "$file" -type f -print0)
+            fi
+        else
+            # For single files, try both BSD and GNU stat formats
+            size=$(stat -f %z "$file" 2>/dev/null || stat --format=%s "$file" 2>/dev/null || echo 0)
+            if [ -n "$size" ] && [ "$size" -gt 0 ]; then
+                total=$((total + size))
+            fi
+        fi
+    done
+    echo "$total"
+}
+
+# Function to show enhanced progress
+show_enhanced_progress() {
+    local total_size=$1
+    local current_size=0
+    local start_time=$(date +%s)
+    local last_update=0
+    local file_count=0
+    
+    echo "📊 Progress Information:"
+    echo "   • Total size: $(human_readable_size $total_size)"
+    
+    while true; do
+        # Get current archive size
+        if [ -f "$output" ]; then
+            current_size=$(stat -f %z "$output" 2>/dev/null || stat --format=%s "$output" 2>/dev/null)
+            current_size=${current_size:-0}
+            
+            local elapsed=$(( $(date +%s) - start_time ))
+            [ "$elapsed" -eq 0 ] && elapsed=1
+            local speed=$(( current_size / elapsed ))
+            local percent=$(( current_size * 100 / total_size ))
+            local remaining=$(( (total_size - current_size) / (speed + 1) ))
+            
+            if [[ $elapsed -gt $last_update ]]; then
+                printf "\r   • Progress: %s/%s (%d%%)" \
+                    "$(human_readable_size $current_size)" \
+                    "$(human_readable_size $total_size)" \
+                    "$percent"
+                printf " | Speed: %s/s" "$(human_readable_size $speed)"
+                printf " | ETA: %dm %ds" "$((remaining / 60))" "$((remaining % 60))"
+                last_update=$elapsed
+            fi
+        fi
+        
+        # Check if the archive process is still running
+        if ! ps -p $archive_pid > /dev/null 2>&1; then
+            break
+        fi
+        
+        # Small sleep to prevent CPU hogging
+        sleep 0.1
+    done
+    echo
+}
+
+# Function to get file list
+get_file_list() {
+    local dir="$1"
+    local no_recurse="$2"
+    
+    # Convert relative path to absolute path
+    local abs_dir=$(cd "$dir" && pwd)
+    
+    if [ "$no_recurse" = true ]; then
+        # Only list files in the current directory, using absolute paths
+        find "$abs_dir" -maxdepth 1 -type f
+    else
+        # List all files recursively, using absolute paths
+        find "$abs_dir" -type f
+    fi
+}
+
+# Function to check if file is binary
+is_binary() {
+    local file="$1"
+    if file "$file" | grep -q "binary"; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Function to create archive
+create_archive() {
+    local source="$1"
+    local output="$2"
+    local compression="$3"
+    local no_recurse="$4"
+    
+    # Convert source to absolute path
+    local abs_source=$(cd "$(dirname "$source")" && pwd)/$(basename "$source")
+    
+    # Get the base directory for tar
+    local base_dir=$(dirname "$abs_source")
+    local file_name=$(basename "$abs_source")
+    
+    # Check if source is a file
+    if [ ! -f "$abs_source" ]; then
+        echo "Error: Source file does not exist: $abs_source"
+        return 1
+    fi
+    
+    # Get file size for progress indicator
+    local file_size=$(stat -f %z "$abs_source" 2>/dev/null || stat -c %s "$abs_source" 2>/dev/null)
+    echo "Processing file: $file_name ($(human_readable_size $file_size))"
+    
+    # Build the tar command
+    local tar_cmd="tar -cf -"
+    
+    # For single file, just add it directly
+    tar_cmd="$tar_cmd -C $base_dir $file_name"
+    
+    # Add compression if specified
+    case "$compression" in
+        gzip) tar_cmd="$tar_cmd | gzip -c" ;;
+        bzip2) tar_cmd="$tar_cmd | bzip2 -c" ;;
+        xz) tar_cmd="$tar_cmd | xz -c" ;;
+        *) tar_cmd="$tar_cmd | gzip -c" ;;  # Default to gzip
+    esac
+    
+    # Execute the tar command with progress indicator
+    echo "Creating archive..."
+    if ! eval "$tar_cmd" > "$output" 2>/dev/null; then
+        echo "Failed to create archive"
+        return 1
+    fi
+    
+    # Verify the output file exists and has content
+    if [ ! -s "$output" ]; then
+        echo "Archive creation failed - output file is empty"
+        return 1
+    fi
+    
+    local output_size=$(stat -f %z "$output" 2>/dev/null || stat -c %s "$output" 2>/dev/null)
+    echo "Archive created successfully: $output ($(human_readable_size $output_size))"
+    
+    return 0
+}
 
 # Version flag (exit early)
 if [[ "$1" == "--version" || "$1" == "-v" ]]; then
@@ -35,7 +230,7 @@ if [[ "$1" == "--self-test" && -z "$FANCY_TAR_SELFTEST" ]]; then
   TMPFILE1="$tmpdir/file1.txt"
   TMPFILE2="$tmpdir/file2.txt"
   TMPFILE3="$tmpdir/file3.txt"
-  
+
   TESTS=0
   FAILS=0
 
@@ -91,6 +286,20 @@ password=""
 verify=false
 split_size=""
 compression_level="5"  # Default 7z compression level (0-9)
+compression_tool=""    # Default to auto-detect parallel tools
+force_compression_tool=""  # User-specified compression tool
+gzip=true             # Enable compression by default
+encrypt_method=""
+hash_output=false
+open_after=false
+start_time=$(date +%s)
+
+# Set no_prompt to true by default in non-interactive mode
+if [ ! -t 0 ]; then
+    no_prompt=true
+else
+    no_prompt=false
+fi
 
 # Store terminal settings for password prompts
 stty_settings=""
@@ -106,214 +315,460 @@ cleanup() {
 # Set up cleanup trap
 trap cleanup EXIT INT TERM
 
-# Parse arguments
+# Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -o|--output) output="$2"; shift 2 ;;
-    -n) gzip=false; shift ;;
-    -s) slow=true; shift ;;
-    -x) open_after=true; shift ;;
-    -t|--tree) show_tree=true; shift ;;
-    --no-recurse) no_recurse=true; shift ;;
-    --hash) hash_output=true; shift ;;
-    --encrypt=*) encrypt_method="${1#*=}"; shift ;;
-    --encrypt) encrypt_method="gpg"; shift ;;
-    --recipient=*) recipient="${1#*=}"; shift ;;
-    --recipient) recipient="$2"; shift 2 ;;
-    --password) password="$2"; shift 2 ;;
-    --verify) verify=true; shift ;;
-    --split-size=*) split_size="${1#*=}"; shift ;;
-    --zip) use_zip=true; shift ;;
-    --7z) use_7z=true; shift ;;
-    --compression=*) compression_level="${1#*=}"; shift ;;
-    -h|--help) show_help ;;
-    -*)
-      echo "❌ Unknown option: $1"
-      exit 1 ;;
-    *) input_files+=("$1"); shift ;;
+        --compression=*)
+            compression_level="${1#*=}"
+            if ! [[ "$compression_level" =~ ^[0-9]+$ ]] || [ "$compression_level" -gt 9 ]; then
+                echo "Error: Invalid compression level. Must be a number between 0 and 9."
+                exit 1
+            fi
+            shift
+            ;;
+        -o|--output)
+            output="$2"
+            shift 2
+            ;;
+        --no-recursion|--no-recurse)
+            no_recurse=true
+            shift
+            ;;
+        --no-prompt)
+            no_prompt=true
+            shift
+            ;;
+        --tree)
+            show_tree=true
+            shift
+            ;;
+        --7z)
+            use_7z=true
+            shift
+            ;;
+        --zip)
+            use_zip=true
+            shift
+            ;;
+        --encrypt=*)
+            encrypt_method="${1#*=}"
+            if [[ "$encrypt_method" != "gpg" && "$encrypt_method" != "openssl" ]]; then
+                echo "Error: Invalid encryption method. Must be 'gpg' or 'openssl'."
+                exit 1
+            fi
+            shift
+            ;;
+        --encrypt)
+            encrypt_method="gpg"  # Default to GPG
+            shift
+            ;;
+        --password=*)
+            password="${1#*=}"
+            shift
+            ;;
+        --password)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --password requires a value"
+                exit 1
+            fi
+            password="$2"
+            shift 2
+            ;;
+        --verify)
+            verify=true
+            shift
+            ;;
+        --hash)
+            hash_output=true
+            shift
+            ;;
+        -x)
+            open_after=true
+            shift
+            ;;
+        --split-size=*)
+            split_size="${1#*=}"
+            shift
+            ;;
+        -n)
+            gzip=false
+            shift
+            ;;
+        --recipient)
+            recipient="$2"
+            shift 2
+            ;;
+        --use=*)
+            force_compression_tool="${1#*=}"
+            if [[ "$force_compression_tool" != "gzip" && "$force_compression_tool" != "bzip2" && "$force_compression_tool" != "xz" ]]; then
+                echo "Error: Invalid compression tool. Must be 'gzip', 'bzip2', or 'xz'."
+                exit 1
+            fi
+            shift
+            ;;
+        -h|--help)
+            show_help
+            ;;
+        -*)
+            echo "Error: Unknown option $1"
+            exit 1
+            ;;
+        *)
+            input_files+=("$1")
+            shift
+            ;;
   esac
 done
 
+# Check if input files exist
 if [ ${#input_files[@]} -eq 0 ]; then
-  echo "❌ No input files specified."
+    echo "Error: No input files specified."
   exit 1
 fi
 
-# Validate compression level
-if [[ "$compression_level" != [0-9] ]]; then
-  echo "❌ Invalid compression level: $compression_level"
-  echo "   Please use a number between 0 and 9"
-  exit 1
-fi
-
-# Warn about high compression levels
-if [[ "$use_7z" = true && "$compression_level" -gt 7 ]]; then
-  echo ""
-  echo "⚠️ Warning: Using high compression level ($compression_level) with 7z."
-  echo "   • This will be very slow"
-  echo "   • Consider using a lower level (5-7) for better speed"
-  echo ""
-fi
-
-confirm_password() {
-  # If password is already set, use it
-  if [[ -n "$password" ]]; then
-    return 0
-  fi
-  
-  local p1 p2
-  # Save current terminal settings
-  stty_settings=$(stty -g)
-  # Disable echo
-  stty -echo
-  
-  while true; do
-    # Read passwords with error handling
-    if ! read -p "Enter password: " p1; then
-      stty "$stty_settings"
-      echo "❌ Error reading password"
-      return 1
-    fi
-    echo
-    
-    if ! read -p "Confirm password: " p2; then
-      stty "$stty_settings"
-      echo "❌ Error reading password"
-      return 1
-    fi
-    echo
-    
-    # Restore terminal settings
-    stty "$stty_settings"
-    
-    # Only validate password strength in interactive mode
-    if [[ -z "$password" ]]; then
-      # Validate password length
-      if [[ ${#p1} -lt 8 ]]; then
-        echo "❌ Password must be at least 8 characters long"
-        continue
+for file in "${input_files[@]}"; do
+    if [ ! -e "$file" ]; then
+        echo "Error: Input file or directory '$file' does not exist."
+        exit 1
       fi
-      
-      # Basic password strength check
-      if [[ ! "$p1" =~ [A-Z] || ! "$p1" =~ [a-z] || ! "$p1" =~ [0-9] ]]; then
-        echo "❌ Password should contain at least one uppercase letter, one lowercase letter, and one number"
-        continue
-      fi
-    fi
-    
-    if [[ "$p1" != "$p2" ]]; then
-      echo "❌ Passwords do not match. Please try again."
-      continue
-    fi
-    
-    password="$p1"
-    break
-  done
-}
+done
 
-# Handle ZIP password interaction
-if [[ "$use_zip" == true && "$encrypt_method" == "zip" && -z "$password" ]]; then
-  confirm_password
-fi
-
-# Handle encryption password interaction
-if [[ -n "$encrypt_method" && "$encrypt_method" != "zip" && -z "$password" ]]; then
-  confirm_password
-fi
-
-# Function to handle file name conflicts
-handle_file_conflict() {
-  local original_file="$1"
-  local base_name="${original_file%.*}"
-  local extension="${original_file##*.}"
-  local counter=1
-  local new_file
-  
-  while true; do
-    new_file="${base_name}_${counter}.${extension}"
-    if [[ ! -e "$new_file" ]]; then
-      break
-    fi
-    counter=$((counter + 1))
-  done
-  
-  while true; do
-    echo ""
-    echo "⚠️ Warning: File '$original_file' already exists."
-    echo "   • Press Enter to use suggested name: $new_file"
-    echo "   • Or type a new name and press Enter"
-    echo "   • Press Ctrl+C to cancel"
-    echo ""
-    read -p "New file name [$new_file]: " user_input
-    
-    if [[ -z "$user_input" ]]; then
-      echo "$new_file"
-      break
-    elif [[ -e "$user_input" ]]; then
-      echo "⚠️ Warning: File '$user_input' already exists."
-      echo "   • Please choose a different name"
-      continue
-    else
-      echo "$user_input"
-      break
-    fi
-  done
-}
-
-# Determine archive name
+# Set default output name if not specified
 if [ -z "$output" ]; then
-  if [ "$use_zip" = true ]; then
+    if [ "$use_7z" = true ]; then
+        output="archive.7z"
+    elif [ "$use_zip" = true ]; then
     output="archive.zip"
-  elif [ "$use_7z" = true ]; then
-    output="archive.7z"
   else
     output="archive.tar.gz"
   fi
 fi
 
-# Check if output file exists and handle conflict
-if [[ -e "$output" ]]; then
-  output=$(handle_file_conflict "$output")
-  if [[ -z "$output" ]]; then
-    echo "❌ Operation cancelled by user"
+# Calculate total size and file count
+total_size=$(calculate_total_size)
+file_count=0
+    for file in "${input_files[@]}"; do
+    if [ -d "$file" ]; then
+        if [ "$no_recurse" = true ]; then
+            count=$(find "$file" -maxdepth 1 -type f | wc -l)
+        else
+            count=$(find "$file" -type f | wc -l)
+  fi
+else
+        count=1
+    fi
+    file_count=$((file_count + count))
+done
+
+if [ $file_count -eq 0 ]; then
+    echo "Error: No files found in input directory."
     exit 1
+fi
+
+# Convert total size to human readable format for display
+human_total_size=$(human_readable_size $total_size)
+
+# Display initial information
+echo "📁 Total files: $file_count"
+echo "📦 Total size: $human_total_size"
+  echo "🗃  Output file: $output"
+echo "🔧 Compression: $([ "$use_7z" = true ] && echo "7z" || ([ "$use_zip" = true ] && echo "zip" || echo "gzip (.tar.gz)"))"
+  echo "🔐 Encryption: $([ -n "$encrypt_method" ] && echo "$encrypt_method" || echo "none")"
+  echo "📂 Recursion: $([ "$no_recurse" = true ] && echo "disabled" || echo "enabled")"
+echo
+
+# Check if output file exists and handle conflicts
+if [ -e "$output" ]; then
+    if [ "$no_prompt" = true ]; then
+        # In non-interactive mode, automatically rename
+        output=$(get_next_filename "$output")
+        echo "⚠️  Output file exists, using: $output"
+    else
+        echo "⚠️  Output file '$output' already exists."
+        echo "    Choose an action:"
+        echo "    [O]verwrite"
+        echo "    [R]ename automatically (default)"
+        echo "    [C]ancel"
+        read -r choice
+        
+        # Convert to lowercase using tr
+        choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+        
+        case "$choice" in
+            o|overwrite)
+                echo "Overwriting existing file..."
+                ;;
+            r|rename|"")  # Empty string (Enter key) now defaults to rename
+                output=$(get_next_filename "$output")
+                echo "Using new filename: $output"
+                ;;
+            c|cancel)
+                echo "Operation cancelled."
+                exit 0
+                ;;
+            *)
+                # Default to rename on invalid input
+                output=$(get_next_filename "$output")
+                echo "Invalid choice. Using new filename: $output"
+        ;;
+    esac
+    fi
+fi
+
+# Show tree view if requested
+if [ "$show_tree" = true ]; then
+    echo "📂 File structure:"
+    for file in "${input_files[@]}"; do
+        if [ -d "$file" ]; then
+            if [ "$no_recurse" = true ]; then
+                find "$file" -maxdepth 1 -type f | sed 's/[^/]*\//  /'
+            else
+                find "$file" -type f | sed 's/[^/]*\//  /g'
+            fi
+        else
+            echo "  $(basename "$file")"
+        fi
+    done
+    echo
+fi
+
+# Check for pv availability
+have_pv=false
+if command -v pv >/dev/null 2>&1; then
+    have_pv=true
+fi
+
+# Check for parallel compression tools
+if [ -n "$force_compression_tool" ]; then
+    compression_tool="$force_compression_tool"
+else
+    if command -v pigz >/dev/null 2>&1; then
+        compression_tool="pigz"
+    elif command -v lbzip2 >/dev/null 2>&1; then
+        compression_tool="lbzip2"
+    elif command -v pbzip2 >/dev/null 2>&1; then
+        compression_tool="pbzip2"
+    elif command -v pxz >/dev/null 2>&1; then
+        compression_tool="pxz"
+    fi
+fi
+
+# Create archive
+echo "🗜 Compressing archive..."
+
+# Create a temporary file for progress monitoring
+progress_file=$(mktemp)
+
+# Start progress monitoring in background
+show_enhanced_progress "$total_size" > "$progress_file" &
+progress_pid=$!
+
+# Function to cleanup progress monitoring
+cleanup_progress() {
+    if [ -n "$progress_pid" ]; then
+        kill $progress_pid 2>/dev/null
+    fi
+    rm -f "$progress_file"
+}
+trap cleanup_progress EXIT
+
+if [ -n "$split_size" ]; then
+    create_split_archive "${input_files[@]}" "$output" "$split_size" > "$progress_file" &
+    archive_pid=$!
+elif [ "$use_7z" = true ]; then
+    if [ -n "$password" ]; then
+        7z a -p"$password" -mx="$compression_level" "$output" "${input_files[@]}" > "$progress_file" 2>&1 &
+        archive_pid=$!
+    else
+        7z a -mx="$compression_level" "$output" "${input_files[@]}" > "$progress_file" 2>&1 &
+        archive_pid=$!
+    fi
+elif [ "$use_zip" = true ]; then
+    if [ -n "$password" ]; then
+        zip -e -P "$password" "$output" "${input_files[@]}" > "$progress_file" 2>&1 &
+        archive_pid=$!
+    else
+        zip -r "$output" "${input_files[@]}" > "$progress_file" 2>&1 &
+        archive_pid=$!
+    fi
+else
+    # Build tar command
+    tar_cmd="tar"
+    if [ "$gzip" = true ]; then
+        if [ "$have_pv" = true ]; then
+            # Use pv for progress monitoring
+            tar_cmd="tar -c"
+            for file in "${input_files[@]}"; do
+                if [ -d "$file" ]; then
+                    if [ "$no_recurse" = true ]; then
+                        # For directories with no recursion, add files individually
+                        find "$file" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+                            tar_cmd="$tar_cmd -C \"$(dirname "$f")\" \"$(basename "$f")\""
+                        done
+                    else
+                        # For directories with recursion, add the whole directory
+                        tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+                    fi
+                else
+                    # For single files, add them directly
+                    tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+                fi
+            done
+            if [ "$compression_tool" = "pigz" ]; then
+                eval "$tar_cmd" 2>/dev/null | pv -s "$total_size" | pigz > "$output" &
+            else
+                eval "$tar_cmd" 2>/dev/null | pv -s "$total_size" | gzip > "$output" &
+            fi
+            archive_pid=$!
+        else
+            # Fall back to regular tar with gzip
+            tar_cmd="$tar_cmd -cz"
+            tar_cmd="$tar_cmd -f \"$output\""
+    for file in "${input_files[@]}"; do
+                if [ -d "$file" ]; then
+                    if [ "$no_recurse" = true ]; then
+                        # For directories with no recursion, add files individually
+                        find "$file" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+                            tar_cmd="$tar_cmd -C \"$(dirname "$f")\" \"$(basename "$f")\""
+                        done
+                    else
+                        # For directories with recursion, add the whole directory
+                        tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+                    fi
+                else
+                    # For single files, add them directly
+                    tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+                fi
+            done
+            eval "$tar_cmd" > "$progress_file" 2>&1 &
+            archive_pid=$!
+        fi
+    else
+        # No compression
+        tar_cmd="$tar_cmd -c -f \"$output\""
+        for file in "${input_files[@]}"; do
+            if [ -d "$file" ]; then
+                if [ "$no_recurse" = true ]; then
+                    # For directories with no recursion, add files individually
+                    find "$file" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' f; do
+                        tar_cmd="$tar_cmd -C \"$(dirname "$f")\" \"$(basename "$f")\""
+                    done
+                else
+                    # For directories with recursion, add the whole directory
+                    tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+                fi
+            else
+                # For single files, add them directly
+                tar_cmd="$tar_cmd -C \"$(dirname "$file")\" \"$(basename "$file")\""
+            fi
+        done
+        if [ "$have_pv" = true ]; then
+            eval "$tar_cmd" 2>/dev/null | pv -s "$total_size" > "$output" &
+            archive_pid=$!
+        else
+            eval "$tar_cmd" > "$progress_file" 2>&1 &
+            archive_pid=$!
+        fi
+    fi
+fi
+
+# Wait for the archive process to complete
+wait $archive_pid
+archive_status=$?
+
+# Clean up progress monitoring
+cleanup_progress
+
+if [ $archive_status -eq 0 ]; then
+    # Handle encryption if requested
+if [ -n "$encrypt_method" ]; then
+        echo "🔐 Encrypting archive..."
+        if [ "$encrypt_method" = "gpg" ]; then
+            # Store original output name
+            original_output="$output"
+            # Update output to include .gpg extension
+            output="${output}.gpg"
+            
+            if [ -n "$recipient" ]; then
+                # Public key encryption
+                if ! gpg --encrypt --recipient "$recipient" --output "$output" "$original_output"; then
+                    echo "Error: Failed to encrypt with GPG public key"
+                    exit 1
+                fi
+                # Remove original file
+                rm "$original_output"
+            else
+                # Symmetric encryption
+                if [ -z "$password" ]; then
+                    read -s -p "Enter encryption password: " password
+                    echo
+                fi
+                if ! gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$output" "$original_output"; then
+                    echo "Error: Failed to encrypt with GPG"
+                    exit 1
+                fi
+                # Remove original file
+                rm "$original_output"
+            fi
+        elif [ "$encrypt_method" = "openssl" ]; then
+            if [ -z "$password" ]; then
+                read -s -p "Enter encryption password: " password
+                echo
+            fi
+            if ! openssl enc -aes-256-cbc -salt -pbkdf2 -in "$output" -out "${output}.enc" -pass pass:"$password"; then
+                echo "Error: Failed to encrypt with OpenSSL"
+                exit 1
+            fi
+            mv "${output}.enc" "$output"
+        fi
+        echo "✅ Encryption complete"
+    fi
+
+    # Verify archive if requested
+    if [ "$verify" = true ]; then
+        verify_archive "$output"
+    fi
+
+    # Generate hash if requested
+if [ "$hash_output" = true ]; then
+  shasum -a 256 "$output" > "$output.sha256"
+  echo "🔐 SHA256 hash saved to: $output.sha256"
+fi
+
+    # Get final archive size
+    archive_size=$(du -h "$output" 2>/dev/null | cut -f1)
+end_time=$(date +%s)
+elapsed=$((end_time - start_time))
+
+    echo "✅ Archive created successfully: $output"
+echo "📏 Archive size: $archive_size"
+echo "🕒 Total time elapsed: $((elapsed / 60))m $((elapsed % 60))s"
+
+    # Show desktop notification
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send "fancy-tar" "Archive created: $output"
+    elif command -v osascript >/dev/null 2>&1; then
+        osascript -e "display notification \"Archive created: $output\" with title \"fancy-tar\""
+    fi
+
+    # Open containing folder if requested
+if [ "$open_after" = true ]; then
+  folder=$(dirname "$output")
+  if command -v open >/dev/null; then
+    open "$folder"
+  elif command -v xdg-open >/dev/null; then
+    xdg-open "$folder"
   fi
 fi
 
-# Determine zip encryption warning
-if [[ "$use_zip" = true && -n "$password" ]]; then
-  echo ""
-  echo "🔐 Warning: Classic ZIP encryption is insecure."
-  echo "   • Easily broken with modern tools"
-  echo "   • No integrity or authenticity protection"
-  echo "   • Not suitable for confidential data"
-  echo ""
-  echo "💡 Use --encrypt=gpg or --encrypt=openssl for stronger encryption."
-  echo ""
+    exit 0
+else
+    echo "❌ Compression failed."
+    rm -f "$output"
+    exit 1
 fi
 
-# Determine 7z encryption warning
-if [[ "$use_7z" = true && -z "$password" ]]; then
-  echo ""
-  echo "🔐 Warning: Creating unencrypted 7z archive."
-  echo "   • Consider using --password for encryption"
-  echo "   • 7z supports strong AES-256 encryption"
-  echo ""
-fi
-
-# Function to calculate human-readable size
-human_readable_size() {
-  local size=$1
-  local units=("B" "K" "M" "G" "T")
-  local unit=0
-  while [[ $size -ge 1024 && $unit -lt ${#units[@]} ]]; do
-    size=$((size / 1024))
-    unit=$((unit + 1))
-  done
-  echo "${size}${units[$unit]}"
-}
-
-# Function to verify archive
+# Helper function to verify archive
 verify_archive() {
   local archive="$1"
   echo "🔍 Verifying archive..."
@@ -341,291 +796,71 @@ verify_archive() {
 
 # Function to create split archive
 create_split_archive() {
-  local input="$1"
-  local output="$2"
-  local split_size="$3"
-  
-  echo "📦 Creating split archive..."
-  echo "   • Split size: $split_size"
-  
-  if [[ "$output" == *.zip ]]; then
-    zip -s "$split_size" "$output" "${input_files[@]}"
-  elif [[ "$output" == *.7z ]]; then
-    7z a -v"$split_size" "$output" "${input_files[@]}"
-  else
-    tar -czf - "${input_files[@]}" | split -b "$split_size" - "$output."
-  fi
-}
-
-# Function to show enhanced progress
-show_enhanced_progress() {
-  local total_size=$1
-  local current_size=0
-  local start_time=$(date +%s)
-  local last_update=0
-  local file_count=0
-  
-  # Count total files
-  for file in "${input_files[@]}"; do
-    if [[ -d "$file" ]]; then
-      file_count=$((file_count + $(find "$file" -type f | wc -l)))
-    else
-      file_count=$((file_count + 1))
-    fi
-  done
-  
-  echo "📊 Progress Information:"
-  echo "   • Total files: $file_count"
-  echo "   • Total size: $(human_readable_size $total_size)"
-  
-  while read -r line; do
-    current_size=$(du -sb "${input_files[@]}" 2>/dev/null | awk '{sum += $1} END {print sum}')
-    [ -z "$current_size" ] && current_size=0
+    local input="$1"
+    local output="$2"
+    local split_size="$3"
     
-    local elapsed=$(( $(date +%s) - start_time ))
-    local speed=$(( current_size / elapsed ))
-    local remaining=$(( (total_size - current_size) / speed ))
+    echo "📦 Creating split archive..."
+    echo "   • Split size: $split_size"
     
-    if [[ $elapsed -gt $last_update ]]; then
-      echo -ne "\r   • Progress: $(human_readable_size $current_size)/$(human_readable_size $total_size)"
-      echo -ne " ($((current_size * 100 / total_size))%)"
-      echo -ne " | Speed: $(human_readable_size $speed)/s"
-      echo -ne " | ETA: $((remaining / 60))m$((remaining % 60))s"
-      last_update=$elapsed
-    fi
-  done
-}
-
-# Create archive
-start_time=$(date +%s)
-
-if [ "$use_7z" = true ]; then
-  echo "📦 Creating 7z archive..."
-  if [ "$show_tree" = true ]; then
-    echo "📂 File hierarchy:"
-    for file in "${input_files[@]}"; do
-      find "$file" | awk -v base="$file" '
-      {
-        rel=substr($0, length(base)+2);
-        depth=gsub("/", "/");
-        indent=""; for(i=1;i<depth;i++) indent=indent "│   ";
-        if (rel != "") print indent "├── " rel;
-      }'
-    done
-    echo ""
-  fi
-  
-  # Calculate total size for progress bar
-  total_size=$(du -sb "${input_files[@]}" 2>/dev/null | awk '{sum += $1} END {print sum}')
-  [ -z "$total_size" ] && total_size=0
-  
-  # Build 7z command with compression level and progress
-  if [ -n "$password" ]; then
-    if command -v pv >/dev/null 2>&1; then
-      # Use pv for progress if available
-      tar -cf - "${input_files[@]}" | pv -s "$total_size" | 7z a -si -p"$password" -mhe=on -mx="$compression_level" "$output"
+    # Convert split size to bytes for tar
+    local size_bytes
+    if [[ "$split_size" =~ ^[0-9]+[KMG]$ ]]; then
+        local unit=${split_size: -1}
+        local size=${split_size%?}
+        case "$unit" in
+            K) size_bytes=$((size * 1024)) ;;
+            M) size_bytes=$((size * 1024 * 1024)) ;;
+            G) size_bytes=$((size * 1024 * 1024 * 1024)) ;;
+        esac
     else
-      # Fallback without progress
-      7z a -p"$password" -mhe=on -mx="$compression_level" "$output" "${input_files[@]}"
+        echo "Error: Invalid split size format. Use K, M, or G suffix (e.g., 100M, 1G)"
+        return 1
     fi
-  else
-    if command -v pv >/dev/null 2>&1; then
-      # Use pv for progress if available
-      tar -cf - "${input_files[@]}" | pv -s "$total_size" | 7z a -si -mx="$compression_level" "$output"
+    
+    if [[ "$output" == *.zip ]]; then
+        if ! zip -s "$split_size" "$output" "${input_files[@]}"; then
+            echo "Error: Failed to create split ZIP archive"
+            return 1
+        fi
+    elif [[ "$output" == *.7z ]]; then
+        if ! 7z a -v"$split_size" "$output" "${input_files[@]}"; then
+            echo "Error: Failed to create split 7z archive"
+            return 1
+        fi
     else
-      # Fallback without progress
-      7z a -mx="$compression_level" "$output" "${input_files[@]}"
-    fi
-  fi
-  
-  # Wait for 7z to finish and ensure file exists before getting size
-  sleep 1
-  # Get 7z file size using stat command
-  if command -v stat >/dev/null 2>&1; then
-    archive_size=$(stat -f %z "$output" 2>/dev/null | awk '{printf "%.1fK", $1/1024}')
-  else
-    archive_size=$(ls -l "$output" 2>/dev/null | awk '{printf "%.1fK", $5/1024}')
-  fi
-  [ -z "$archive_size" ] && archive_size="?"
-  
-  if [ -n "$split_size" ]; then
-    create_split_archive "${input_files[@]}" "$output" "$split_size"
-  fi
-elif [ "$use_zip" = true ]; then
-  echo "📦 Creating ZIP archive..."
-  if [ "$show_tree" = true ]; then
-    echo "📂 File hierarchy:"
-    for file in "${input_files[@]}"; do
-      find "$file" | awk -v base="$file" '
-      {
-        rel=substr($0, length(base)+2);
-        depth=gsub("/", "/");
-        indent=""; for(i=1;i<depth;i++) indent=indent "│   ";
-        if (rel != "") print indent "├── " rel;
-      }'
-    done
-    echo ""
-  fi
-  
-  # Calculate total size for progress bar
-  total_size=$(du -sb "${input_files[@]}" 2>/dev/null | awk '{sum += $1} END {print sum}')
-  [ -z "$total_size" ] && total_size=0
-  
-  # Build zip command with progress if pv is available
-  zip_cmd="zip -r"
-  [ "$no_recurse" = true ] && zip_cmd="zip"
-  if [ -n "$password" ]; then
-    zip_cmd="$zip_cmd -P $password"
-  fi
-  
-  if command -v pv >/dev/null 2>&1; then
-    # Use pv for progress if available
-    tar -cf - "${input_files[@]}" | pv -s "$total_size" | $zip_cmd "$output" -
-  else
-    # Fallback without progress
-    $zip_cmd "$output" "${input_files[@]}"
-  fi
-  
-  # Wait for zip to finish and ensure file exists before getting size
-  sleep 1
-  # Get ZIP file size using stat command
-  if command -v stat >/dev/null 2>&1; then
-    archive_size=$(stat -f %z "$output" 2>/dev/null | awk '{printf "%.1fK", $1/1024}')
-  else
-    archive_size=$(ls -l "$output" 2>/dev/null | awk '{printf "%.1fK", $5/1024}')
-  fi
-  [ -z "$archive_size" ] && archive_size="?"
-  
-  if [ -n "$split_size" ]; then
-    create_split_archive "${input_files[@]}" "$output" "$split_size"
-  fi
-else
-  extension=".tar.gz"
-  [ "$gzip" = false ] && extension=".tar"
-  [[ "$output" != *"$extension" ]] && output="${output}${extension}"
-
-  echo "📦 Calculating total size..."
-  total_files=$(find "${input_files[@]}" -type f | wc -l | tr -d ' ')
-  total_size=$(du -ch "${input_files[@]}" 2>/dev/null | grep total | awk '{print $1}')
-  [ -z "$total_size" ] && total_size="?"
-
-  echo "📁 Total files: $total_files"
-  echo "📦 Total size: $total_size"
-  echo "🗃  Output file: $output"
-  echo "🔧 Compression: $([ "$gzip" = true ] && echo "gzip (.tar.gz)" || echo "none (.tar)")"
-  echo "🔐 Encryption: $([ -n "$encrypt_method" ] && echo "$encrypt_method" || echo "none")"
-  echo "📂 Recursion: $([ "$no_recurse" = true ] && echo "disabled" || echo "enabled")"
-  echo ""
-
-  tmpfile="fancy-tar-tmp.tar"
-  rm -f "$tmpfile"
-  tar_opts=""
-  [ "$no_recurse" = true ] && tar_opts="--no-recursion"
-  file_list=$(find "${input_files[@]}" -type f)
-  echo "$file_list" > filelist.txt
-
-  echo "📦 Archiving files..."
-  count=0
-  while IFS= read -r file; do
-    count=$((count + 1))
-    echo "[$count/$total_files] Adding: $file"
-    [ "$slow" = true ] && sleep 0.25
-  done < filelist.txt
-
-  # Use -P to handle absolute paths properly
-  tar -P -cf "$tmpfile" $tar_opts --files-from=filelist.txt 2>/dev/null || { echo "❌ Tar failed. Cleaning up."; rm -f "$tmpfile"; exit 1; }
-  rm -f filelist.txt
-
-  if [ "$gzip" = true ]; then
-    echo "🗜 Compressing archive..."
-    pv "$tmpfile" | gzip > "$output" || { echo "❌ Compression failed. Cleaning up."; rm -f "$output" "$tmpfile"; exit 1; }
-    rm -f "$tmpfile"
-  else
-    mv "$tmpfile" "$output"
-  fi
-
-  # Get archive size for tar archives
-  archive_size=$(du -h "$output" 2>/dev/null | cut -f1 || echo "?")
-
-  # Encryption (tar path)
-  if [ -n "$encrypt_method" ]; then
-    case "$encrypt_method" in
-      gpg)
-        encrypted="${output}.gpg"
-        if [ -n "$recipient" ]; then
-          gpg --output "$encrypted" --encrypt --recipient "$recipient" "$output" || { echo "❌ GPG encryption failed"; rm -f "$encrypted"; exit 1; }
+        # For tar archives, we need to handle the compression
+        local compression_cmd=""
+        if [[ "$output" == *.gz ]]; then
+            compression_cmd="gzip -c"
+        elif [[ "$output" == *.bz2 ]]; then
+            compression_cmd="bzip2 -c"
+        elif [[ "$output" == *.xz ]]; then
+            compression_cmd="xz -c"
+        fi
+        
+        # Create the split archive
+        if [ -n "$compression_cmd" ]; then
+            if ! tar -cf - "${input_files[@]}" | $compression_cmd | split -b "$split_size" - "$output."; then
+                echo "Error: Failed to create split compressed archive"
+                return 1
+            fi
         else
-          if [ -z "$password" ]; then
-            confirm_password
-          fi
-          echo "$password" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$encrypted" "$output" || { echo "❌ GPG symmetric encryption failed"; rm -f "$encrypted"; exit 1; }
+            if ! tar -cf - "${input_files[@]}" | split -b "$split_size" - "$output."; then
+                echo "Error: Failed to create split tar archive"
+                return 1
+            fi
         fi
-        rm -f "$output"
-        output="$encrypted"
-        ;;
-      openssl)
-        encrypted="${output}.enc"
-        if [ -z "$password" ]; then
-          confirm_password
+        
+        # Rename the first part to match the output filename
+        if [ -f "${output}.aa" ]; then
+            mv "${output}.aa" "$output"
         fi
-        # Use pbkdf2 to avoid the deprecation warning
-        openssl enc -aes-256-cbc -pbkdf2 -salt -in "$output" -out "$encrypted" -pass pass:"$password" || { echo "❌ OpenSSL encryption failed"; rm -f "$encrypted"; exit 1; }
-        rm -f "$output"
-        output="$encrypted"
-        ;;
-      *)
-        echo "❌ Unsupported encryption method: $encrypt_method"
-        rm -f "$output"
-        exit 1
-        ;;
-    esac
-    echo "🔐 Encrypted archive saved: $output"
-  fi
-
-  if [ -n "$split_size" ]; then
-    create_split_archive "${input_files[@]}" "$output" "$split_size"
-  fi
-fi
-
-# Verify archive if requested
-if [ "$verify" = true ]; then
-  if [ -n "$split_size" ]; then
-    echo "⚠️ Verification not supported for split archives"
-  else
-    verify_archive "$output" || exit 1
-  fi
-fi
-
-# Hash output
-if [ "$hash_output" = true ]; then
-  shasum -a 256 "$output" > "$output.sha256"
-  echo "🔐 SHA256 hash saved to: $output.sha256"
-fi
-
-end_time=$(date +%s)
-elapsed=$((end_time - start_time))
-
-# Get final archive size if not already set
-if [ -z "$archive_size" ]; then
-  archive_size=$(du -h "$output" 2>/dev/null | cut -f1 || echo "?")
-fi
-
-echo "✅ Done! Archive created: $output"
-echo "📏 Archive size: $archive_size"
-echo "🕒 Total time elapsed: $((elapsed / 60))m $((elapsed % 60))s"
-
-if command -v notify-send >/dev/null 2>&1; then
-  notify-send "fancy-tar" "Archive created: $output"
-elif command -v osascript >/dev/null 2>&1; then
-  osascript -e "display notification \"Archive created: $output\" with title \"fancy-tar\""
-fi
-
-if [ "$open_after" = true ]; then
-  folder=$(dirname "$output")
-  if command -v open >/dev/null; then open "$folder"
-  elif command -v xdg-open >/dev/null; then xdg-open "$folder"
-  fi
-fi
+    fi
+    
+    echo "✅ Split archive created successfully"
+    return 0
+}
 
 show_help() {
   echo "Usage: fancy-tar [options] <files...>"
@@ -636,7 +871,8 @@ show_help() {
   echo "  -s                     Use slower but better compression"
   echo "  -x                     Open the output folder when done"
   echo "  -t, --tree            Show hierarchical file structure before archiving"
-  echo "  --no-recurse          Do not include directory contents (shallow archive)"
+  echo "  --no-recursion|--no-recurse Do not include directory contents (shallow archive)"
+  echo "  --no-prompt           Skip all interactive prompts (use defaults)"
   echo "  --hash                Output SHA256 hash file alongside the archive"
   echo "  --encrypt[=method]    Encrypt archive with gpg (default) or openssl"
   echo "  --recipient <id>      Recipient ID for GPG public key encryption"
@@ -653,6 +889,10 @@ show_help() {
   echo "                       • 1: Fastest"
   echo "                       • 5: Normal (default)"
   echo "                       • 9: Ultra (very slow)"
+  echo "  --use=<tool>          Force specific compression tool"
+  echo "                       • gzip: Use gzip instead of pigz"
+  echo "                       • bzip2: Use bzip2 instead of pbzip2"
+  echo "                       • xz: Use xz instead of pxz"
   echo "  -h, --help            Show this help message"
   echo "  --version             Show version information"
   echo ""
@@ -662,9 +902,11 @@ show_help() {
   echo "  fancy-tar --7z --compression=9 -o archive.7z large_folder/"
   echo "  fancy-tar --split-size=100M -o archive.tar.gz huge_folder/"
   echo "  fancy-tar --verify -o archive.tar.gz important_files/"
+  echo "  fancy-tar --use=gzip -o archive.tar.gz files/"  # Force gzip instead of pigz
   echo ""
   echo "Note: When using --split-size, the archive will be split into multiple parts"
   echo "      with the specified size. For example, with --split-size=100M, a 500MB"
   echo "      archive would be split into 5 parts of 100MB each."
   exit 0
 }
+

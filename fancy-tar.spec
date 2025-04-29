@@ -1,7 +1,7 @@
 Name:           fancy-tar
-Version:        1.6.7
+Version:        1.7.2
 Release:        1%{?dist}
-Summary:        Enhanced tar with progress bar and ETA
+Summary:        A modern tar wrapper with progress bars and encryption
 
 License:        MIT
 URL:            https://github.com/jgiambona/fancy-tar
