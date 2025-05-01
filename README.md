@@ -1,10 +1,10 @@
 # 🎯 fancy-tar
 
-**fancy-tar** is a smarter, friendlier tar tool with progress bars, tree views, encryption, ZIP support, and more.
+**fancy-tar** is a smarter, friendlier tar tool with progress bars, tree views, encryption, ZIP support, and more. It's a simple bash script wrapper around existing tools, making it easy to audit and trust - no need to rely on unknown authors or complex binaries. It saves you time by providing a user-friendly interface to common operations that people want but often can't be bothered looking up or remembering the complicated commands for.
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-1.7.2-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
+[![Version](https://img.shields.io/badge/version-1.7.3-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/shell-bash-89E051.svg)](https://www.gnu.org/software/bash/)
 
@@ -86,6 +86,8 @@ sudo yum install ./fancy-tar-1.7.0-1.noarch.rpm
 
    # Option 2: Manual installation
    sudo cp scripts/fancy_tar_progress.sh /usr/local/bin/fancy-tar
+   sudo ln -s /usr/local/bin/fancy-tar /usr/local/bin/fancytar
+   sudo ln -s /usr/local/bin/fancy-tar /usr/local/bin/ftar
    sudo chmod +x /usr/local/bin/fancy-tar
    ```
 
@@ -127,6 +129,10 @@ sudo yum install ./fancy-tar-1.7.0-1.noarch.rpm
 
 ```bash
 fancy-tar [options] <files/directories>
+# or
+fancytar [options] <files/directories>
+# or
+ftar [options] <files/directories>
 ```
 
 ### Common Options
@@ -147,6 +153,7 @@ fancy-tar [options] <files/directories>
 - `--7z`                  Create a .7z archive (with optional password)
 - `--compression=<0-9>`   Set compression level for 7z archives (0=store, 9=ultra)
 - `--use=<tool>`          Force specific compression tool (gzip, bzip2, xz, etc.)
+- `--print-filename`      Output only the final archive filename (for scripting)
 
 ### Compression Methods
 
@@ -208,11 +215,23 @@ fancy-tar myfiles/ -o backup.tar.gz
 # Create a plain tar archive (no compression)
 fancy-tar myfiles/ -n -o backup.tar
 
+# Create archive with timestamp in filename
+fancy-tar database.sql -o "database-$(date +%Y%m%d-%H%M).tar.gz"
+
+# Get just the filename for use in scripts or pipes
+fancy-tar myfiles/ -o "backup-$(date +%Y%m%d).tar.gz" --print-filename | xargs some_other_command
+
 # Show file tree before archiving
 fancy-tar project/ --tree -o project.tar.gz
 
 # Create archive with hash verification
 fancy-tar data/ --hash -o data.tar.gz
+
+# Capture output filename for use in other scripts
+output_file=$(fancy-tar myfiles/ -o backup.tar.gz)
+echo "Created archive: $output_file"
+# Use the filename in another command
+some_other_command "$output_file"
 ```
 
 ### 7z Archives

@@ -37,3 +37,13 @@ __pycache__/
 
 # Homebrew bottle output
 *.bottle.tar.gz
+
+# Test files and archives
+test.tar*
+test.7z*
+test.zip*
+test_*.txt
+test_*.log
+test_*.bin
+*.sha256
+archive.tar*

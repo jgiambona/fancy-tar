@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Function to clean up demo files
+cleanup() {
+    cd - > /dev/null
+    rm -rf "$DEMO_DIR"
+    rm -f demo*.tar.gz demo*.tar.bz2 demo*.tar.xz demo*.7z demo*.zip
+}
+
+# Ensure cleanup happens even on script exit
+trap cleanup EXIT
+
 # Create a temporary directory for our demo
 DEMO_DIR=$(mktemp -d)
 cd "$DEMO_DIR"
@@ -41,5 +51,4 @@ run_cmd "fancy-tar project/ --hash -o demo3.tar.gz"
 run_cmd "fancy-tar project/ --encrypt=gpg -o demo4.tar.gz"
 
 # Clean up
-cd - > /dev/null
-rm -rf "$DEMO_DIR" 
+cleanup 

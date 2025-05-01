@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.3] - 2024-04-30
+
+### Added
+- Added `--print-filename` flag to output only the final archive filename
+  - Useful for scripting and piping to other commands
+  - Suppresses all other output except the filename
+  - Can be combined with other options
+- Added `fancytar` and `ftar` command aliases
+  - Alternative command names for easier typing
+  - Full shell completion support for all aliases
+  - Automatically created during installation
+
 ## [1.7.2] - 2024-04-29
 
 ### Fixed

@@ -6,7 +6,49 @@ on:
       - 'v*'
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🔍 Check version consistency
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          # Check VERSION file
+          FILE_VERSION=$(cat VERSION)
+          if [ "$VERSION" != "$FILE_VERSION" ]; then
+            echo "Error: Version mismatch in VERSION file"
+            exit 1
+          fi
+          # Check RPM spec
+          SPEC_VERSION=$(grep '^Version:' fancy-tar.spec | awk '{print $2}')
+          if [ "$VERSION" != "$SPEC_VERSION" ]; then
+            echo "Error: Version mismatch in fancy-tar.spec"
+            exit 1
+          fi
+          # Check Debian changelog
+          DEB_VERSION=$(head -n1 debian/changelog | cut -d' ' -f2 | tr -d '()')
+          if [ "$VERSION" != "$DEB_VERSION" ]; then
+            echo "Error: Version mismatch in debian/changelog"
+            exit 1
+          fi
+          # Check man page
+          MAN_VERSION=$(grep '\.TH FANCY-TAR' docs/fancy-tar.1 | awk '{print $6}' | tr -d '"')
+          if [ "$VERSION" != "$MAN_VERSION" ]; then
+            echo "Error: Version mismatch in docs/fancy-tar.1"
+            exit 1
+          fi
+          # Check main script
+          SCRIPT_VERSION=$(grep '^VERSION=' scripts/fancy_tar_progress.sh | cut -d'"' -f2)
+          if [ "$VERSION" != "$SCRIPT_VERSION" ]; then
+            echo "Error: Version mismatch in scripts/fancy_tar_progress.sh"
+            exit 1
+          fi
+          echo "All version numbers are consistent"
+
   package:
+    needs: check-version
     runs-on: ubuntu-latest
     strategy:
       matrix:

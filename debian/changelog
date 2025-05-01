@@ -1,10 +1,11 @@
-fancy-tar (1.7.2-1) unstable; urgency=medium
+fancy-tar (1.7.3-1) unstable; urgency=medium
 
-  * Release v1.7.2
-  * Fixed GPG encrypted output files to properly maintain .gpg extension
-  * Fixed OpenSSL encrypted output files to properly maintain .enc extension
+  * Release v1.7.3
+  * Update documentation and tests
+  * Add new test files and version update script
+  * Remove todo.txt
 
- -- Jason Giambona <jason.giambona@gmail.com>  Mon, 29 Apr 2024 00:00:00 +0000
+ -- Jason Giambona <jason.giambona@gmail.com>  Mon, 29 Apr 2024 12:00:00 +0000
 
 fancy-tar (1.6.4-1) unstable; urgency=medium
 

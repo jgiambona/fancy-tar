@@ -7,6 +7,18 @@ FAILED=0
 TMP=test-tmp
 SCRIPT=./scripts/fancy_tar_progress.sh
 
+# Function to clean up test files
+cleanup() {
+    rm -rf "$TMP"
+    rm -f test.tar.gz test.tar.bz2 test.tar.xz test.7z test.zip test.tar.gz.sha256
+}
+
+# Ensure cleanup happens even on script exit
+trap cleanup EXIT
+
+# Initial cleanup
+cleanup
+
 mkdir -p "$TMP"
 echo "Test file" > "$TMP/sample.txt"
 
@@ -36,7 +48,8 @@ if ! $SCRIPT --self-test; then
   FAILED=1
 fi
 
-rm -rf "$TMP"
+# Final cleanup
+cleanup
 echo
 [ "$FAILED" -eq 0 ] && echo "✅ All tests passed!" || echo "⚠️ Some tests failed"
 exit "$FAILED"

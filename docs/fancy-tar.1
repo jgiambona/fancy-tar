@@ -1,8 +1,16 @@
-.TH FANCY-TAR 1 "2025-04-18" "1.7.2" "fancy-tar 1.7.2"
+.TH FANCY-TAR 1 "2024-04-30" "1.7.3" "fancy-tar 1.7.3"
 .SH NAME
-fancy-tar \- A modern, feature-rich tar wrapper with progress bars and encryption
+fancy-tar, fancytar, ftar \- A modern, feature-rich tar wrapper with progress bars and encryption
 .SH SYNOPSIS
 .B fancy-tar
+.RI [ options ]
+.RI < files... >
+.br
+.B fancytar
+.RI [ options ]
+.RI < files... >
+.br
+.B ftar
 .RI [ options ]
 .RI < files... >
 .SH DESCRIPTION
@@ -85,6 +93,9 @@ Set compression level (0=store, 9=ultra)
 .TP
 .B \-\-use=<tool>
 Force specific compression tool (gzip, bzip2, xz, etc.)
+.TP
+.B \-\-print\-filename
+Output only the final archive filename (useful for scripting)
 .SH PROGRESS REPORTING
 The tool shows detailed progress information including:
 .IP \(bu 2
@@ -121,7 +132,7 @@ ZIP archive with password:
 .B
 fancy-tar folder --zip --password secret
 .SH VERSION
-fancy-tar 1.7.2
+fancy-tar 1.7.3
 .SH SEE ALSO
 .BR tar (1),
 .BR gzip (1),

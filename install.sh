@@ -19,6 +19,11 @@ FISH_COMPLETION_DIR="$BREW_PREFIX/share/fish/vendor_completions.d"
 echo "📥 Installing script to $BIN_DIR"
 install -Dm755 scripts/fancy_tar_progress.sh "$BIN_DIR/fancy-tar"
 
+# Create symbolic links for aliases
+echo "🔗 Creating command aliases..."
+ln -sf "$BIN_DIR/fancy-tar" "$BIN_DIR/fancytar"
+ln -sf "$BIN_DIR/fancy-tar" "$BIN_DIR/ftar"
+
 # 2. Install man page
 echo "📘 Installing man page to $MAN_DIR"
 mkdir -p "$MAN_DIR"
@@ -36,3 +41,4 @@ cp completions/fancy-tar.fish "$FISH_COMPLETION_DIR/fancy-tar.fish"
 
 echo "✅ fancy-tar installed!"
 echo "💡 Try: fancy-tar -h or fancy-tar -<TAB> for autocompletion"
+echo "💡 You can also use: fancytar or ftar"
