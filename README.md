@@ -4,11 +4,27 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-1.7.3-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
+[![Version](https://img.shields.io/badge/version-1.7.5-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/shell-bash-89E051.svg)](https://www.gnu.org/software/bash/)
+[![Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://www.kernel.org/)
+[![macOS](https://img.shields.io/badge/platform-macOS-lightgrey.svg)](https://www.apple.com/macos/)
 
 </div>
+
+## 📑 Table of Contents
+
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Option Compatibility by Compression Method](#option-compatibility-by-compression-method)
+- [Quickstart](#quickstart)
+- [Compression Methods](#compression-methods)
+- [Security Features](#-security-features)
+- [Examples](#-examples)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Acknowledgments](#-acknowledgments)
+- [Test Scripts](#test-scripts)
 
 ## ✨ Features
 
@@ -24,6 +40,14 @@
 - ✅ Self-testing with interactive password prompts (`--self-test`)
 - 🔄 Desktop notifications and folder opening
 - 🧹 Automatic cleanup of temporary files
+- 📑 **Split archive support:** Prints a summary of all split parts, checks for missing/empty parts, provides reassembly instructions, and handles errors and user prompts for existing parts.
+
+## Why Use fancy-tar?
+- No need to remember complex tar/zip/7z commands
+- Automatic progress bars and file counts
+- Safer, friendlier encryption and password handling
+- Smart defaults and parallel compression for speed
+- Unified interface for multiple archive formats
 
 ## 🚀 Installation
 
@@ -140,20 +164,78 @@ ftar [options] <files/directories>
 - `-o, --output <file>`    Specify output file name
 - `-n`                     Create uncompressed tar archive
 - `-s`                     Use slower but better compression
-- `-x`                     Open the output folder when done
+- `-x`, `--open-after`         Open the output folder when done (now supported on macOS and Linux)
 - `-t, --tree`            Show hierarchical file structure before archiving
 - `--no-recurse`          Do not include directory contents (shallow archive)
 - `--hash`                Output SHA256 hash file alongside the archive
 - `--encrypt[=method]`    Encrypt archive with gpg (default) or openssl
 - `--recipient <id>`      Recipient ID for GPG public key encryption
 - `--password <pass>`     Password to use for encryption (if supported)
-- `--verify`              Verify the archive after creation
-- `--split-size=<size>`   Split the archive into smaller parts (e.g., 100M, 1G)
+- `--verify`              Verify the archive after creation (skipped for split archives; see below)
+- `--split-size=<size>`   Split the archive into smaller parts (e.g., 100M, 1G). Prints a summary of all parts and reassembly instructions.
 - `--zip`                 Create a .zip archive (with optional password)
 - `--7z`                  Create a .7z archive (with optional password)
 - `--compression=<0-9>`   Set compression level for 7z archives (0=store, 9=ultra)
-- `--use=<tool>`          Force specific compression tool (gzip, bzip2, xz, etc.)
+- `--use=<tool>`          Force specific compression tool (gzip, pigz, bzip2, pbzip2, lbzip2, xz, pxz)
 - `--print-filename`      Output only the final archive filename (for scripting)
+
+**Tip:** If you do not specify <kbd>--zip</kbd> or <kbd>--7z</kbd>, the default output is a tar archive (with gzip compression if available).
+
+### Option Compatibility by Compression Method
+
+**Note:** If neither <kbd>--zip</kbd> nor <kbd>--7z</kbd> is specified, the default is tar/tar.gz (with parallel tools if available).
+
+Some options are only available with certain compression methods. The table below summarizes which options can be used with each method:
+
+| Option                        | tar/tar.gz | zip  | 7z   |
+|-------------------------------|:----------:|:----:|:----:|
+| <a name="opt-output"></a><kbd>-o</kbd>, <kbd>--output</kbd>                |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-n"></a><kbd>-n</kbd> (no compression)         |    ✔️      | ❌   | ❌   |
+| <a name="opt-s"></a><kbd>-s</kbd> (slower/better compression) | ✔️      | ❌   | ❌   |
+| <a name="opt-x"></a><kbd>-x</kbd>, <kbd>--open-after</kbd> (open after)             |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-tree"></a><kbd>-t</kbd>, <kbd>--tree</kbd>                  |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-no-recurse"></a><kbd>--no-recurse</kbd>                |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-hash"></a><kbd>--hash</kbd>                      |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    ✔️      | ❌   | ❌   |
+| <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | ✔️   | ✔️   |
+| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    ✔️      | ❌   | ❌   |
+| <a name="opt-password"></a><kbd>--password</kbd>¹                  |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-verify"></a><kbd>--verify</kbd>                    |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | ✔️   | ❌   |
+| <a name="opt-7z"></a><kbd>--7z</kbd>                        |    ❌      | ❌   | ✔️   |
+| <a name="opt-compression"></a><kbd>--compression=&lt;0-9&gt;</kbd>         |    ❌      | ❌   | ✔️   |
+| <a name="opt-use"></a><kbd>--use=&lt;tool&gt;</kbd>                |    ✔️²      | ❌   | ❌   |
+| <a name="opt-print-filename"></a><kbd>--print-filename</kbd>            |    ✔️      | ✔️   | ✔️   |
+
+✔️ = Supported  ❌ = Not Supported
+
+¹ <kbd>--password</kbd> for tar/tar.gz is only used with <kbd>--encrypt=gpg</kbd> or <kbd>--encrypt=openssl</kbd>.
+
+² <kbd>--use</kbd> valid choices: <kbd>gzip</kbd>, <kbd>pigz</kbd>, <kbd>bzip2</kbd>, <kbd>pbzip2</kbd>, <kbd>lbzip2</kbd>, <kbd>xz</kbd>, <kbd>pxz</kbd> (tar/tar.gz only).
+
+³ <kbd>--encrypt</kbd> for 7z uses 7z's built-in AES-256 encryption (not GPG/OpenSSL). For zip, it uses classic zip password protection. For tar/tar.gz, it uses GPG or OpenSSL as specified.
+
+See the [Examples](#💡-examples) section below for usage patterns with each compression method.
+
+### Quickstart
+
+| Task                                 | Example Command |
+|--------------------------------------|-----------------|
+| Create tar.gz                        | [`fancy-tar folder/ -o archive.tar.gz`](#quickstart) |
+| Create zip                           | [`fancy-tar --zip folder/ -o archive.zip`](#quickstart) |
+| Create 7z                            | [`fancy-tar --7z folder/ -o archive.7z`](#quickstart) |
+| Encrypt with GPG                     | [`fancy-tar --encrypt=gpg folder/ -o secret.tar.gz`](#quickstart) |
+| Encrypt with OpenSSL                 | [`fancy-tar --encrypt=openssl --password folder/ -o secret.tar.gz`](#quickstart) |
+| Encrypt ZIP with password            | [`fancy-tar --zip --password folder/ -o secure.zip`](#quickstart) |
+| Encrypt 7z with password             | [`fancy-tar --7z --password folder/ -o secure.7z`](#quickstart) |
+| Split tar.gz archive                 | [`fancy-tar --split-size=100M folder/ -o split.tar.gz`](#quickstart) |
+| Split zip archive                    | [`fancy-tar --zip --split-size=500M folder/ -o split.zip`](#quickstart) |
+| Split 7z archive                     | [`fancy-tar --7z --split-size=1G folder/ -o split.7z`](#quickstart) |
+| Show file tree before archiving      | [`fancy-tar --tree folder/ -o archive.tar.gz`](#quickstart) |
+| Verify archive after creation        | [`fancy-tar --verify folder/ -o archive.tar.gz`](#quickstart) |
+| **Open output folder after creation**| [`fancy-tar -x folder/ -o archive.tar.gz`](#quickstart) |
+| **Open output folder after creation (long option)**| [`fancy-tar --open-after folder/ -o archive.tar.gz`](#quickstart) |
 
 ### Compression Methods
 
@@ -162,7 +244,9 @@ The tool automatically uses parallel compression tools when available:
 - bzip2 → pbzip2 (parallel bzip2)
 - xz → pxz (parallel xz)
 
-You can force a specific compression tool using the `--use` option:
+**Tip:** Parallel tools like <kbd>pigz</kbd>, <kbd>pbzip2</kbd>, and <kbd>pxz</kbd> can significantly speed up compression on multi-core systems.
+
+You can force a specific compression tool using the <a href="#opt-use"><kbd>--use</kbd></a> option:
 ```bash
 # Force using gzip instead of pigz
 fancy-tar --use=gzip -o archive.tar.gz files/
@@ -189,7 +273,7 @@ fancy-tar --use=xz -o archive.tar.xz files/
     - Uses PBKDF2 for key derivation
     - Includes salt for better security
   - 🔐 7z (strong encryption)
-    - Uses AES-256 encryption when password is provided
+    - Uses AES-256 encryption when <kbd>--encrypt</kbd> or <kbd>--password</kbd> is provided with <kbd>--7z</kbd>
     - Encrypts both file contents and headers
     - Supports solid compression
     - Uses maximum compression by default
@@ -200,10 +284,10 @@ fancy-tar --use=xz -o archive.tar.xz files/
       - 5: Normal (default)
       - 9: Ultra (very slow)
       - ⚠️ High levels (8-9) can be extremely slow
-  - ⚠️ ZIP encryption (not recommended for sensitive data)
-    - Uses classic ZIP password protection
-    - Easily broken with modern tools
-    - No integrity or authenticity protection
+  - ⚠️ **ZIP encryption (not recommended for sensitive data)**
+    - **Uses classic ZIP password protection**
+    - **Easily broken with modern tools**
+    - **No integrity or authenticity protection**
 
 ## 💡 Examples
 
@@ -262,16 +346,69 @@ fancy-tar sensitive/ --zip --password -o secure.zip
 ```
 
 ### Split Archives
-```bash
-# Create a split tar.gz archive
-fancy-tar huge_folder/ --split-size=100M -o split.tar.gz
 
-# Create a split 7z archive
-fancy-tar huge_folder/ --7z --split-size=1G -o split.7z
+When you use the `--split-size` option, fancy-tar will split the archive into multiple parts of the specified size. After creation, the script:
+- Prints a summary of all split parts, including their sizes
+- Warns if any part is missing or empty
+- Skips verification (integrity check) for split archives, since verification must be done after reassembly
+- Provides clear instructions for reassembling and verifying the archive
+- Prompts if split parts already exist, allowing you to overwrite, rename, or cancel
+- Cleans up all split parts if the operation fails
 
-# Create a split ZIP archive
-fancy-tar huge_folder/ --zip --split-size=500M -o split.zip
+**Example output:**
 ```
+✅ Split archive created successfully. Parts:
+   split.tar.gz (50.0MB)
+   split.tar.gz.ab (50.0MB)
+   split.tar.gz.ac (50.0MB)
+   split.tar.gz.ad (empty!)
+⚠️  Warning: split.tar.gz.ad is empty!
+⚠️  Warning: Some split parts are missing or empty. Archive may be incomplete.
+
+To reassemble and verify your split archive:
+   cat split.tar.gz* > combined.tar.gz
+   gzip -t combined.tar.gz   # or   tar -tf combined.tar.gz
+```
+For 7z split archives:
+```
+To reassemble and extract:
+   7z x split.7z.001
+   (Make sure all .7z.0* parts are present in the same directory)
+```
+
+**Note:** Verification (`--verify`) is skipped for split archives. You must reassemble all parts before verifying integrity.
+
+**Required tools:**
+- `split` (for tar-based split archives)
+- `7z` (for 7z split archives)
+- `zip` (for zip split archives)
+
+If any required tool is missing, the script will print an actionable error message.
+
+**User prompts:**
+- If split parts matching the output name already exist, you will be prompted to overwrite, rename, or cancel.
+
+**Error handling:**
+- If the split operation fails, all split parts are cleaned up to avoid confusion.
+
+**Example usage:**
+```bash
+fancy-tar huge_folder/ --split-size=100M -o split.tar.gz
+# Output will include a summary of parts and reassembly instructions
+```
+
+## Hashing and Integrity Verification
+
+When using the `--hash` option, fancy-tar generates a SHA256 hash file (e.g., `archive.7z.sha256`) **after all other steps, including encryption**. This means the hash is for the final archive file, which may be encrypted if you used `--encrypt`.
+
+**Why is this the default and recommended behavior?**
+- The hash allows anyone to verify the integrity of the file they received or downloaded, regardless of whether it is encrypted or not.
+- This is the standard practice for public distribution: users can check the hash to ensure the file (encrypted or not) has not been tampered with or corrupted.
+- If you need to verify the contents of the archive after decryption, you can generate and keep a hash of the unencrypted file for your own internal use, but this is not typically distributed.
+
+**Summary:**
+- The `.sha256` file always matches the final output file (post-encryption, if used).
+- This ensures users can verify the file they actually have, which is the most secure and expected workflow for distribution.
 
 ## 🤝 Contributing
 
@@ -323,4 +460,11 @@ chmod +x tests/*.sh
 # Run man page tests
 ./tests/test_man.sh
 ```
+
+### Platform Support for Folder Opening
+
+- The `-x`/`--open-after` option opens the folder containing the output archive after creation.
+- On **macOS**: uses the `open` command.
+- On **Linux**: uses the `xdg-open` command.
+- On other platforms, this feature may not be available.
 

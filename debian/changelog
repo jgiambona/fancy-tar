@@ -1,11 +1,11 @@
-fancy-tar (1.7.3-1) unstable; urgency=medium
+fancy-tar (1.7.5-1) stable; urgency=medium
 
-  * Release v1.7.3
+  * Release v1.7.5
   * Update documentation and tests
   * Add new test files and version update script
   * Remove todo.txt
 
- -- Jason Giambona <jason.giambona@gmail.com>  Mon, 29 Apr 2024 12:00:00 +0000
+ -- $(git config user.name) <$(git config user.email)>  $(date -R)
 
 fancy-tar (1.6.4-1) unstable; urgency=medium
 

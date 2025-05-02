@@ -1,6 +1,6 @@
 # Future Features and Improvements
 
-This document tracks planned features and improvements for future versions of fancy-tar.
+This document tracks features and improvements to consider and/or implement for future versions of fancy-tar.
 
 ## File Selection and Management
 
@@ -27,11 +27,9 @@ This document tracks planned features and improvements for future versions of fa
 ## Security and Encryption
 
 3. **Security Enhancements**
-    - Add support for different encryption algorithms
     - Add key file support for encryption
     - Add support for encrypted file names
     - Add support for encrypted metadata
-    - Add integrity verification
 
 4. **Self-Extracting Archives**
     - Add support for creating self-extracting archives
@@ -158,6 +156,7 @@ Features are listed in rough order of priority, but actual implementation order 
 
 Future versions will focus on implementing these features in logical groups:
 
+- v1.7.x: Bug fixes and improvements to core features.
 - v1.8.x: Focus on file selection and management features
 - v1.9.x: Focus on security and encryption enhancements
 - v2.0.x: Focus on user experience and integration features

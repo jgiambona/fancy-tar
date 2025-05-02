@@ -84,7 +84,7 @@ run_test "XZ compression" \
 
 # Test 6: 7z creation
 run_test "7z creation" \
-    "./scripts/fancy_tar_progress.sh test_dir --7z" \
+    "./scripts/fancy_tar_progress.sh test_dir --7z --debug" \
     0 \
     "Archiving files"
 
@@ -113,4 +113,18 @@ run_test "No recursion" \
     "Archiving files"
 
 echo "All tests completed!"
+
+if [ -f /tmp/fancy_tar_debug.log ]; then
+    echo "==== DEBUG LOG ===="
+    cat /tmp/fancy_tar_debug.log
+fi
+if [ -f /tmp/fancy_tar_7z.log ]; then
+    echo "==== 7Z LOG ===="
+    cat /tmp/fancy_tar_7z.log
+fi
+if [ -f /tmp/fancy_tar_zip.log ]; then
+    echo "==== ZIP LOG ===="
+    cat /tmp/fancy_tar_zip.log
+fi
+
 exit 0 

@@ -16,9 +16,14 @@ passed_tests=0
 failed_tests=0
 skipped_tests=0
 
+# Detect project root and main script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR/.."
+FANCY_TAR="$PROJECT_ROOT/scripts/fancy_tar_progress.sh"
+
 # Cleanup function
 cleanup() {
-    rm -rf test_data test.tar.gz* *.enc gpg_pass.txt test_openssl_pass.txt
+    rm -rf test_data test.tar.gz* test.tar.bz2* test.tar.xz* *.enc gpg_pass.txt test_openssl_pass.txt
 }
 
 # Create test files
@@ -69,29 +74,31 @@ run_test() {
     local name="$1"
     local cmd="$2"
     local expected_exit="${3:-0}"
-    local input="${4:-}"
+    local expected_msg="${4:-}"
     
     ((total_tests++))
     echo -e "\nTest $total_tests: $name"
     echo "Command: $cmd"
     echo -e "\nOutput:"
     
-    # Run the command with input if provided
-    if [ -n "$input" ]; then
-        output=$(echo -e "$input" | eval "$cmd" 2>&1) || true
-    else
-        output=$(eval "$cmd" 2>&1) || true
-    fi
+    # Run the command
+    output=$(eval "$cmd" 2>&1) || true
     exit_code=$?
     
-    # If the command was captured in a subshell, get its exit code
-    if [[ "$cmd" == *"||"* || "$cmd" == *"&&"* ]]; then
-        if echo "$output" | grep -q "❌ Invalid compression level"; then
-            exit_code=1
+    echo "$output"
+    
+    # Check for expected error message if provided
+    if [ -n "$expected_msg" ]; then
+        if echo "$output" | grep -q "$expected_msg"; then
+            echo -e "${GREEN}✓ Test passed${NC}"
+            ((passed_tests++))
+            return
+        else
+            echo -e "${RED}❌ Expected error message not found: $expected_msg${NC}"
+            ((failed_tests++))
+            return
         fi
     fi
-    
-    echo "$output"
     
     if [ $exit_code -eq $expected_exit ]; then
         echo -e "${GREEN}✓ Test passed${NC}"
@@ -126,32 +133,29 @@ echo -e "\n"
 run_test "GPG encryption with verification" \
     "gpg --batch --yes --passphrase TestPass123! -c test_data/file1.txt && gpg --batch --yes --passphrase TestPass123! -d test_data/file1.txt.gpg > /dev/null"
 
-# Test OpenSSL encryption (with input redirection)
+# Test OpenSSL encryption
 run_test "OpenSSL encryption" \
-    "scripts/fancy_tar_progress.sh test_data --encrypt=openssl --password TestPass123! -o test.tar.gz"
+    "$FANCY_TAR test_data --encrypt=openssl --password TestPass123! -o test.tar.gz"
 
 # Test 3: Invalid compression level
-echo "Test 3: Invalid compression level"
-run_test "scripts/fancy_tar_progress.sh test_data -o test.tar.gz --compression=99" 1 "Invalid compression level"
+run_test "Invalid compression level" \
+    "$FANCY_TAR test_data -o test.tar.gz --compression=99" 1 "Error: Invalid compression level. Must be a number between 0 and 9."
 
 # Test 4: Missing input directory
-echo "Test 4: Missing input directory"
-run_test "scripts/fancy_tar_progress.sh nonexistent_dir -o test.tar.gz" 1 "No files found in input directory"
+run_test "Missing input directory" \
+    "$FANCY_TAR nonexistent_dir -o test.tar.gz" 1 "Error: Input file or directory 'nonexistent_dir' does not exist."
 
 # Test special characters in filenames
 run_test "Special characters in filenames" \
-    "scripts/fancy_tar_progress.sh 'test_data/special file (1)!.txt' -o test.tar.gz" \
-    0 "test_special.tar.gz"
+    "$FANCY_TAR 'test_data/special file (1)!.txt' -o test_special.tar.gz"
 
 # Test hard links
 run_test "Hard links" \
-    "scripts/fancy_tar_progress.sh test_data/hardlink.txt -o test.tar.gz" \
-    0 "test_hardlink.tar.gz"
+    "$FANCY_TAR test_data/hardlink.txt -o test_hardlink.tar.gz"
 
 # Test file permissions
 run_test "File permissions" \
-    "scripts/fancy_tar_progress.sh test_data/perm600.txt -o test.tar.gz" \
-    0 "test_perm.tar.gz"
+    "$FANCY_TAR test_data/perm600.txt -o test_perm.tar.gz"
 
 # Print test summary
 echo -e "\n📊 Test Summary"

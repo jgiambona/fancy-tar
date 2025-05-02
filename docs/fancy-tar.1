@@ -1,4 +1,4 @@
-.TH FANCY-TAR 1 "2024-04-30" "1.7.3" "fancy-tar 1.7.3"
+.TH FANCY-TAR 1 "2024-04-30" "1.7.5" "fancy-tar 1.7.5"
 .SH NAME
 fancy-tar, fancytar, ftar \- A modern, feature-rich tar wrapper with progress bars and encryption
 .SH SYNOPSIS
@@ -55,8 +55,8 @@ Create uncompressed tar archive
 .B \-s
 Use slower but better compression
 .TP
-.B \-x
-Open the output folder when done
+.B \-x, \-\-open-after
+Open the output folder when done (supported on macOS and Linux)
 .TP
 .B \-t, \-\-tree
 Show hierarchical file structure before archiving
@@ -132,7 +132,7 @@ ZIP archive with password:
 .B
 fancy-tar folder --zip --password secret
 .SH VERSION
-fancy-tar 1.7.3
+fancy-tar 1.7.5
 .SH SEE ALSO
 .BR tar (1),
 .BR gzip (1),

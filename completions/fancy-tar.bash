@@ -18,7 +18,7 @@ _fancy_tar() {
       return
       ;;
     --use=*)
-      COMPREPLY=($(compgen -W "gzip bzip2 xz" -- "${cur#*=}"))
+      COMPREPLY=($(compgen -W "gzip pigz bzip2 pbzip2 lbzip2 xz pxz" -- "${cur#*=}"))
       return
       ;;
     --split-size=*)
@@ -45,7 +45,7 @@ _fancy_tar() {
       return
       ;;
     --use)
-      COMPREPLY=($(compgen -W "gzip bzip2 xz" -- "$cur"))
+      COMPREPLY=($(compgen -W "gzip pigz bzip2 pbzip2 lbzip2 xz pxz" -- "$cur"))
       return
       ;;
     --split-size)

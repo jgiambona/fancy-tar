@@ -4,7 +4,8 @@ _arguments -s \
   '-o[Specify output file name]:output file:_files' \
   '-n[Create uncompressed tar archive]' \
   '-s[Use slower but better compression]' \
-  '-x[Open the output folder when done]' \
+  '-x[Open the output folder when done (macOS/Linux)]' \
+  '--open-after[Open the output folder when done (macOS/Linux)]' \
   '-t[Show hierarchical file structure before archiving]' \
   '--tree[Show hierarchical file structure before archiving]' \
   '--no-recursion[Do not include directory contents]' \
@@ -16,4 +17,5 @@ _arguments -s \
   '--print-filename[Output only the final archive filename]' \
   '--version[Show version information]' \
   '--help[Show help message]' \
+  '--use=[Force specific compression tool]:tool:(gzip pigz bzip2 pbzip2 lbzip2 xz pxz)' \
   '*:files:_files'
