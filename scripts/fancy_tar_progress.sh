@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.7.5"
+VERSION="1.8.0"
 
 # Pre-scan for --debug flag to enable debug output as early as possible
 for arg in "$@"; do

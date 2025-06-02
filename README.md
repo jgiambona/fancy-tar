@@ -364,9 +364,6 @@ When you use the `--split-size` option, fancy-tar will split the archive into mu
    split.tar.gz (50.0MB)
    split.tar.gz.ab (50.0MB)
    split.tar.gz.ac (50.0MB)
-   split.tar.gz.ad (empty!)
-⚠️  Warning: split.tar.gz.ad is empty!
-⚠️  Warning: Some split parts are missing or empty. Archive may be incomplete.
 
 To reassemble and verify your split archive:
    cat split.tar.gz* > combined.tar.gz

@@ -1,4 +1,4 @@
-.TH FANCY-TAR 1 "2024-04-30" "1.7.5" "1.7.5"
+.TH FANCY-TAR 1 "2024-04-30" "1.8.0" "1.8.0"
 .SH NAME
 fancy-tar, fancytar, ftar \- A modern, feature-rich tar wrapper with progress bars and encryption
 .SH SYNOPSIS
@@ -124,25 +124,25 @@ GPG and OpenSSL provide strong encryption. ZIP password protection is insecure a
 .TP
 Create and verify a split archive:
 .B
-fancy-tar folder --split-size=100M --verify -o archive.tar.gz
+fancy-tar 1.8.0folder --split-size=100M --verify -o archive.tar.gz
 .TP
 Create a 7z archive with high compression:
 .B
-fancy-tar folder --7z --compression=9 -o archive.7z
+fancy-tar 1.8.0folder --7z --compression=9 -o archive.7z
 .TP
 Encrypt using GPG (symmetric):
 .B
-fancy-tar folder --encrypt=gpg
+fancy-tar 1.8.0folder --encrypt=gpg
 .TP
 Encrypt with OpenSSL:
 .B
-fancy-tar folder --encrypt=openssl --password secret
+fancy-tar 1.8.0folder --encrypt=openssl --password secret
 .TP
 ZIP archive with password:
 .B
-fancy-tar folder --zip --password secret
+fancy-tar 1.8.0folder --zip --password secret
 .SH VERSION
-fancy-tar 1.7.5
+fancy-tar 1.8.0
 .SH SEE ALSO
 .BR tar (1),
 .BR gzip (1),
