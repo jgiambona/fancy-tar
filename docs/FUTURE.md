@@ -31,16 +31,9 @@ This document tracks features and improvements to consider and/or implement for 
     - Add support for encrypted file names
     - Add support for encrypted metadata
 
-4. **Self-Extracting Archives**
-    - Add support for creating self-extracting archives
-    - Add support for custom extraction scripts
-    - Add support for platform-specific self-extractors
-    - Add support for installation scripts
-    - Add support for license agreements
-
 ## User Experience
 
-5. **Configuration Options**
+4. **Configuration Options**
     - Add support for configuration files
     - Add support for environment variables
     - Add support for command aliases
@@ -50,20 +43,8 @@ This document tracks features and improvements to consider and/or implement for 
     - Add configuration option naming consistency with CLI
     - Add configuration validation and error checking
 
-6. **Integration Features**
-    - Add support for system tray integration
-    - Add support for file manager integration
-    - Add MacOS drag-and-drop support with icon-based interface
-      - Create MacOS .app bundle installer
-      - Add drag-and-drop file handling
-      - Add configuration dialog
-      - Add progress visualization
-      - Add system integration
-    - Add right-click context menu integration for all platforms
-    - Add file browser integration for all platforms
 
-7. **Interactive Mode**
-    - Add fully interactive mode with TUI interface for users who prefer a graphical interface over command line
+5. **Interactive Mode**
     - Add file selection interface with checkboxes
     - Add compression options selection menu
     - Add encryption settings configuration
@@ -71,7 +52,6 @@ This document tracks features and improvements to consider and/or implement for 
     - Add interactive help and documentation
     - Add keyboard shortcuts for common operations
     - Add mouse support for file selection
-    - Add color themes and customization
     - Add multi-step wizard for complex operations
     - Add interactive file extraction with individual file selection
     - Add manifest generation with multiple output formats
@@ -79,7 +59,7 @@ This document tracks features and improvements to consider and/or implement for 
       - Text file
       - CSV file
 
-8. **Archive Inspection**
+6. **Archive Inspection**
     - Add `--manifest` option to generate detailed file listings
       - List all files in archive with paths
       - Show compressed and uncompressed sizes
@@ -89,60 +69,110 @@ This document tracks features and improvements to consider and/or implement for 
         - Tree view (`--manifest=tree`)
         - Text file (`--manifest=text`)
         - CSV file (`--manifest=csv`)
-      - Support output to file (`--manifest-output=file.txt`)
-      - Support filtering by path/pattern
-      - Support sorting by:
-        - Full path (`--sort=path`)
-        - Filename only (`--sort=name`)
-        - Size (`--sort=size`)
-        - Date (`--sort=date`)
-        - Compression ratio (`--sort=ratio`)
-      - Support interactive mode integration
+        - CSV with SHA256 hash (`--manifest=csvhash`)
+      - CSV columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp
+      - CSVHASH columns: All CSV columns plus SHA256 hash per file
+      - Include warnings or information in the manifest output file, such as split archive reassembly instructions, a list of split parts, etc.
 
-## Documentation and Testing
+## Per-File Archiving Rules via Config File
 
-9. **Documentation and Help**
-    - Add more detailed help documentation
-    - Add examples for common use cases
-    - Add troubleshooting guide
-    - Add performance tuning guide
-    - Add security best practices
+### Overview
 
-## Dependencies and Installation
+Introduce a configuration system that allows users to specify rules for handling files based on their names or patterns when creating archives. This enables automatic application of settings such as encryption, recipient selection, archive format, and compression options for specific files or file types.
 
-10. **Smart Dependency Management**
-    - Add operation-specific dependency checking
-      - Check required tools for each operation type
-      - Verify version compatibility
-      - Handle missing dependencies gracefully
-      - Support platform-specific dependency detection:
-        - MacOS: Homebrew, MacPorts, pkgsrc
-        - Linux: apt, yum, dnf, pacman, zypper, emerge
-        - Windows: Chocolatey, Scoop, Winget
-        - BSD: pkg, ports
-      - Security considerations:
-        - Verify package signatures and checksums
-        - Validate package repositories
-        - Implement secure download protocols
-        - Check for known vulnerabilities
-    - Add intelligent dependency installation
-      - Offer to install only required dependencies
-      - Support multiple package managers per platform
-      - Handle platform-specific requirements
-      - Support fallback installation methods
-      - Security considerations:
-        - Require user confirmation for installations
-        - Log all installation activities
-        - Implement rollback capabilities
-        - Validate installation integrity
-    - Add cross-platform dependency mapping
-      - Map equivalent packages across platforms
-      - Handle platform-specific package names
-      - Support alternative packages when primary unavailable
-    - Add dependency documentation
-      - Document required dependencies per operation
-      - List alternative packages
-      - Provide installation instructions per platform
+---
+
+### Use Case Examples
+
+- **Encrypt all `.sql` files for a specific recipient.**
+- **Use a different archive format for files named `ABC123.txt`.**
+- **Apply custom compression settings to log files.**
+
+---
+
+### Proposed Config File Format
+
+Use a YAML (or JSON) file to define rules. Each rule includes:
+- A filename pattern (glob or regex).
+- Settings to apply when a file matches the pattern.
+
+**Example (`.fancytar.yml`):**
+```yaml
+rules:
+  - pattern: "*.sql"
+    encrypt: true
+    recipient: "alice@example.com"
+    format: "tar.gz"
+    compression: "xz"
+  - pattern: "ABC123.txt"
+    encrypt: true
+    recipient: "bob@example.com"
+    format: "zip"
+    compression: "deflate"
+```
+
+---
+
+### Implementation Plan
+
+1. **Config File Loading**
+   - On archive creation, load a config file (default: `.fancytar.yml` in the working directory, or as specified by CLI).
+
+2. **Rule Matching**
+   - For each file to be archived, check if its name matches any rule's pattern using glob or regex matching.
+   - If multiple rules match, apply the first match or allow for rule priority/merging.
+
+3. **Settings Application**
+   - Apply the matched rule's settings (encryption, recipient, format, compression, etc.) when processing the file.
+   - If no rule matches, use default/global settings.
+
+4. **CLI Integration**
+   - Allow CLI options to override config file settings if specified.
+
+5. **Feedback and Logging**
+   - Optionally, log or display which rules were applied to which files for transparency.
+
+---
+
+### Extensibility
+
+- **Additional Criteria:** Support matching on file size, directory, or other attributes.
+- **More Actions:** Add support for exclusion, custom metadata, or post-processing hooks.
+- **Rule Priority:** Allow users to specify rule order or explicit priorities.
+
+---
+
+### Example Workflow
+
+1. User runs:
+   ```
+   fancytar create archive.tar file1.sql ABC123.txt notes.txt
+   ```
+2. The tool loads `.fancytar.yml`.
+3. It matches `file1.sql` to the first rule, `ABC123.txt` to the second, and `notes.txt` to none (uses defaults).
+4. It applies the specified settings for each file as it adds them to the archive.
+
+---
+
+### Technical Notes
+
+- **YAML Parsing:** Use a library such as PyYAML (Python) or equivalent.
+- **Pattern Matching:** Use `fnmatch` or `glob` for glob patterns, or regex for advanced matching.
+- **Backward Compatibility:** If no config file is present, fall back to current behavior.
+
+---
+
+### Open Questions
+
+- Should rules be allowed to merge, or is first-match sufficient?
+- Should there be a dry-run or verbose mode to preview rule application?
+- How should errors in the config file be handled?
+
+---
+
+### Status
+
+**Planned** — Not yet implemented.
 
 ## Implementation Priority
 
@@ -168,9 +198,3 @@ If you'd like to contribute to any of these features, please:
 2. Create a pull request with your implementation
 3. Include tests and documentation
 4. Follow the existing code style and conventions
-
-## Archive Format Support
-
-- Add AES-256 encryption for ZIP files
-- Add support for more archive formats (rar, lzma, etc.)
-- Add support for archive conversion between formats

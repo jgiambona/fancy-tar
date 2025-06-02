@@ -1,7 +1,7 @@
 #compdef fancy-tar fancytar ftar
 
 _arguments -s \
-  '-o[Specify output file name]:output file:_files' \
+  '-o[Specify output file name (for split archives, a .parts.txt file will also be created)]:output file:_files' \
   '-n[Create uncompressed tar archive]' \
   '-s[Use slower but better compression]' \
   '-x[Open the output folder when done (macOS/Linux)]' \
@@ -18,4 +18,7 @@ _arguments -s \
   '--version[Show version information]' \
   '--help[Show help message]' \
   '--use=[Force specific compression tool]:tool:(gzip pigz bzip2 pbzip2 lbzip2 xz pxz)' \
+  '-f[Automatically overwrite any existing output file or split parts without prompting]' \
+  '--force[Automatically overwrite any existing output file or split parts without prompting]' \
+  '--manifest=[Generate a manifest file listing the contents of the archive]:format:(tree text csv csvhash)' \
   '*:files:_files'

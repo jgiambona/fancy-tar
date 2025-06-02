@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>AMApplicationBuild</key>
+    <string>549.2</string>
+    <key>AMApplicationVersion</key>
+    <string>2.10</string>
+    <key>AMDocumentVersion</key>
+    <string>2.0</string>
+    <key>actions</key>
+    <array>
+        <dict>
+            <key>action</key>
+            <string>com.apple.cocoa.application.run-shell-script</string>
+            <key>actionNumber</key>
+            <integer>0</integer>
+            <key>actionParameters</key>
+            <dict>
+                <key>inputMethod</key>
+                <string>arguments</string>
+                <key>shell</key>
+                <string>/bin/bash</string>
+                <key>script</key>
+                <string>DIR="$(dirname "$1")"
+ARCHIVE_NAME="Archive-$(date +%Y%m%d-%H%M%S).tar.gz"
+/usr/local/bin/fancytar create "$DIR/$ARCHIVE_NAME" "$@"</string>
+            </dict>
+        </dict>
+    </array>
+    <key>connectors</key>
+    <array/>
+    <key>workflowMetaData</key>
+    <dict>
+        <key>workflowTypeIdentifier</key>
+        <string>com.apple.Automator.quickAction</string>
+        <key>workflowInputTypeIdentifier</key>
+        <string>com.apple.Automator.nothing</string>
+        <key>workflowOutputTypeIdentifier</key>
+        <string>com.apple.Automator.nothing</string>
+        <key>workflowInputUUID</key>
+        <string>00000000-0000-0000-0000-000000000000</string>
+        <key>workflowOutputUUID</key>
+        <string>00000000-0000-0000-0000-000000000000</string>
+    </dict>
+</dict>
+</plist> 

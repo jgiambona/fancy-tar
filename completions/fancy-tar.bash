@@ -3,7 +3,7 @@ _fancy_tar() {
   local cur prev opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  opts="-o -n -s -x -t --tree --no-recursion --hash --encrypt= --recipient --password --zip --version --help --print-filename"
+  opts="-o -n -s -x -t --tree --no-recursion --hash --encrypt= --recipient --password --zip --version --help --print-filename --force -f"
 
   COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
 
@@ -11,6 +11,7 @@ _fancy_tar() {
   case "${cur}" in
     --output=*|-o=*)
       _filedir
+      COMPREPLY+=( $(compgen -W "*.parts.txt" -- ${cur#*=}) )
       return
       ;;
     --compression=*)
@@ -90,12 +91,23 @@ _fancy_tar() {
     --7z)
       return
       ;;
+    --force|-f)
+      return
+      ;;
+    --manifest=*)
+      COMPREPLY=($(compgen -W "tree text csv csvhash" -- "${cur#*=}"))
+      return
+      ;;
+    --manifest)
+      COMPREPLY=($(compgen -W "tree text csv csvhash" -- "$cur"))
+      return
+      ;;
     --)
       _filedir
       return
       ;;
     -*)
-      COMPREPLY=($(compgen -W "--output -o --compression --use --split-size --encrypt --recipient --password --help -h --version -v --self-test --tree -t --no-recurse --hash --verify --zip --7z" -- "$cur"))
+      COMPREPLY=($(compgen -W "--output -o --compression --use --split-size --encrypt --recipient --password --help -h --version -v --self-test --tree -t --no-recurse --hash --verify --zip --7z --force -f" -- "$cur"))
       return
       ;;
   esac

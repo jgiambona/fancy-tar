@@ -96,39 +96,44 @@ create_split_archive() {
     done
     shopt -u nullglob
     if [ ${#found_parts[@]} -gt 0 ]; then
-        echo "⚠️  Split parts matching '$output*' already exist:"
-        for f in "${found_parts[@]}"; do
-            echo "   $f"
-        done
-        echo "    Choose an action:"
-        echo "    [O]verwrite all"
-        echo "    [R]ename output (default)"
-        echo "    [C]ancel"
-        read -r -t 30 choice || choice="r"
-        choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
-        case "$choice" in
-            o|overwrite)
-                echo "Overwriting existing split parts..."
-                rm -f $part_glob
-                ;;
-            r|rename|"")
-                local base="$output"
-                local counter=1
-                while ls "${base}_$counter"* 1> /dev/null 2>&1; do
-                    counter=$((counter + 1))
-                done
-                output="${base}_$counter"
-                echo "Using new output base: $output"
-                ;;
-            c|cancel)
-                echo "Operation cancelled."
-                return 1
-                ;;
-            *)
-                output="${output}_renamed"
-                echo "Invalid choice. Using new output base: $output"
-                ;;
-        esac
+        if [ "$force_overwrite" = true ]; then
+            echo "--force specified: Overwriting all existing split parts..."
+            rm -f $part_glob
+        else
+            echo "⚠️  Split parts matching '$output*' already exist:"
+            for f in "${found_parts[@]}"; do
+                echo "   $f"
+            done
+            echo "    Choose an action:"
+            echo "    [O]verwrite all"
+            echo "    [R]ename output (default)"
+            echo "    [C]ancel"
+            read -r -t 30 choice || choice="r"
+            choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+            case "$choice" in
+                o|overwrite)
+                    echo "Overwriting existing split parts..."
+                    rm -f $part_glob
+                    ;;
+                r|rename|"")
+                    local base="$output"
+                    local counter=1
+                    while ls "${base}_$counter"* 1> /dev/null 2>&1; do
+                        counter=$((counter + 1))
+                    done
+                    output="${base}_$counter"
+                    echo "Using new output base: $output"
+                    ;;
+                c|cancel)
+                    echo "Operation cancelled."
+                    return 1
+                    ;;
+                *)
+                    output="${output}_renamed"
+                    echo "Invalid choice. Using new output base: $output"
+                    ;;
+            esac
+        fi
     fi
 
     # Convert split size to bytes for tar
@@ -197,11 +202,24 @@ create_split_archive() {
     echo "✅ Split archive created successfully. Parts:"
     local parts=( )
     shopt -s nullglob
-    for f in "$output"*; do
-        if [[ "$f" != "$output" ]]; then
-            parts+=("$f")
-        fi
-    done
+    # Add main file
+    if [ -f "$output" ]; then
+        parts+=("$output")
+    fi
+    # Add split parts based on archive type
+    if [[ "$output" == *.7z ]]; then
+        for f in "$output".???; do
+            [[ "$f" =~ \.([0-9][0-9][0-9])$ ]] && parts+=("$f")
+        done
+    elif [[ "$output" == *.zip ]]; then
+        for f in "$output".z??; do
+            [[ "$f" =~ \.z[0-9][0-9]$ ]] && parts+=("$f")
+        done
+    else
+        for f in "$output".[a-z][a-z]; do
+            [[ "$f" =~ \.([a-z][a-z])$ ]] && parts+=("$f")
+        done
+    fi
     shopt -u nullglob
     for f in "${parts[@]}"; do
         size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
@@ -211,6 +229,26 @@ create_split_archive() {
             echo "   $f ($(human_readable_size $size))"
         fi
     done
+    # Write split parts file
+    parts_file="${output}.parts.txt"
+    : > "$parts_file"
+    for f in "${parts[@]}"; do
+        size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
+        echo "$f $size" >> "$parts_file"
+    done
+    echo "ℹ️  Split parts list saved to: $parts_file"
+
+    # If --hash is set, generate a SHA256 hash for each part
+    if [ "$hash_output" = true ]; then
+        parts_hash_file="${output}.parts.sha256"
+        : > "$parts_hash_file"
+        for f in "${parts[@]}"; do
+            shasum -a 256 "$f" >> "$parts_hash_file"
+        done
+        echo "⚠️  SHA256 hashes for split parts saved to: $parts_hash_file"
+        echo "⚠️  These hashes are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file."
+    fi
+
     # Warn if any part is missing or empty
     local missing=false
     for f in "${parts[@]}"; do
@@ -242,6 +280,20 @@ create_split_archive() {
         fi
     fi
     echo ""
+
+    # After split archive creation, if 7z and --verify, run 7z t on the first part:
+    if [[ "$output" == *.7z ]] && [ "$verify" = true ]; then
+        first_part="${output}.001"
+        if [ -f "$first_part" ]; then
+            echo "🔍 Verifying 7z split archive using: 7z t $first_part"
+            if 7z t "$first_part"; then
+                echo "✅ 7z split archive verified successfully."
+            else
+                echo "❌ 7z split archive verification failed."
+            fi
+        fi
+    fi
+
     return 0
 }
 
@@ -356,6 +408,8 @@ encrypt_method=""
 hash_output=false
 open_after=false
 compression_tool=""  # Will be set after argument parsing
+force_overwrite=false
+manifest_format=""
 
 # Set no_prompt to true by default in non-interactive mode
 if [ ! -t 0 ]; then
@@ -366,6 +420,139 @@ fi
 
 # Store terminal settings for password prompts
 stty_settings=""
+
+# Manifest generation function and helpers
+write_manifest() {
+    local archive="$1"
+    local format="$2"
+    local manifest_file="$3"
+    local split_parts_file="${archive}.parts.txt"
+    local split_info=""
+    local files=()
+    local tempdir
+    tempdir=$(mktemp -d)
+
+    # Extract file list depending on archive type
+    if [[ "$archive" == *.zip ]]; then
+        unzip -l "$archive" > "$tempdir/list.txt"
+        files=( $(awk 'NR>3 {print $4}' "$tempdir/list.txt" | sed '/^$/d' | head -n -2) )
+    elif [[ "$archive" == *.7z ]]; then
+        7z l "$archive" > "$tempdir/list.txt"
+        files=( $(awk '/^----/{p=1;next}/^----/{p=0}p{print $6}' "$tempdir/list.txt" | sed '/^$/d') )
+    else
+        tar -tf "$archive" > "$tempdir/list.txt"
+        files=()
+        while IFS= read -r line; do
+            files+=("$line")
+        done < "$tempdir/list.txt"
+    fi
+
+    # Helper to get file type and depth
+    get_file_type() {
+        local f="$1"
+        if [[ "$archive" == *.zip ]]; then
+            # No direct way, guess by trailing slash
+            [[ "$f" == */ ]] && echo "directory" || echo "file"
+        elif [[ "$archive" == *.7z ]]; then
+            # No direct way, guess by trailing slash
+            [[ "$f" == */ ]] && echo "directory" || echo "file"
+        else
+            # Use tar -tvf for type
+            local info=$(tar -tvf "$archive" "$f" 2>/dev/null | head -n1)
+            [[ "$info" =~ ^d ]] && echo "directory" || ([[ "$info" =~ ^l ]] && echo "symlink" || echo "file")
+        fi
+    }
+    get_depth() {
+        local f="$1"
+        awk -F'/' '{print NF-1}' <<< "$f"
+    }
+
+    # Function to get SHA256 hash using the first available tool
+    get_sha256() {
+        if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum | awk '{print $1}'
+        elif command -v shasum >/dev/null 2>&1; then
+            shasum -a 256 | awk '{print $1}'
+        elif command -v openssl >/dev/null 2>&1; then
+            openssl dgst -sha256 | awk '{print $2}'
+        else
+            echo "NO_HASH_TOOL_FOUND"
+        fi
+    }
+
+    # CSV and CSVHASH
+    if [[ "$format" == "csv" || "$format" == "csvhash" ]]; then
+        local header="Path,Compressed Size,Uncompressed Size,Compression Ratio,File Type,Depth,Attributes,Timestamp"
+        [[ "$format" == "csvhash" ]] && header="$header,SHA256"
+        echo "$header" > "$manifest_file"
+        for f in "${files[@]}"; do
+            local type=$(get_file_type "$f")
+            local depth=$(get_depth "$f")
+            local attr date time usize csize ratio sha256
+            if [[ "$archive" == *.zip ]]; then
+                local line=$(unzip -l "$archive" | awk -v file="$f" '$4==file {print $0}')
+                usize=$(echo "$line" | awk '{print $1}')
+                date=$(echo "$line" | awk '{print $2}')
+                time=$(echo "$line" | awk '{print $3}')
+                csize="N/A"; ratio="N/A"; attr="N/A"
+            elif [[ "$archive" == *.7z ]]; then
+                local line=$(7z l "$archive" | awk '/^----/{p=1;next}/^----/{p=0}p && $6==f' f="$f" )
+                date=$(echo "$line" | awk '{print $1}')
+                time=$(echo "$line" | awk '{print $2}')
+                attr=$(echo "$line" | awk '{print $3}')
+                usize=$(echo "$line" | awk '{print $4}')
+                csize=$(echo "$line" | awk '{print $5}')
+                ratio="N/A"; [[ "$usize" != "0" && "$usize" != "" && "$csize" != "" ]] && ratio=$(awk -v c="$csize" -v u="$usize" 'BEGIN{if(u>0){printf "%.2f", c/u}else{print "N/A"}}')
+            else
+                local line=$(tar -tvf "$archive" "$f" 2>/dev/null | head -n1)
+                attr=$(echo "$line" | awk '{print $1}')
+                usize=$(echo "$line" | awk '{print $3}')
+                date=$(echo "$line" | awk '{print $4}')
+                time=$(echo "$line" | awk '{print $5}')
+                csize="N/A"; ratio="N/A"
+            fi
+            # Replace commas in attr with semicolons
+            attr=$(echo "$attr" | tr ',' ';')
+            if [[ "$format" == "csvhash" ]]; then
+                if [[ "$archive" == *.zip ]]; then
+                    sha256=$(unzip -p "$archive" "$f" 2>/dev/null | get_sha256)
+                elif [[ "$archive" == *.7z ]]; then
+                    sha256=$(7z e "$archive" "$f" -so 2>/dev/null | get_sha256)
+                else
+                    sha256=$(tar -xOf "$archive" "$f" 2>/dev/null | get_sha256)
+                fi
+            fi
+            local row="$f,$csize,$usize,$ratio,$type,$depth,$attr,$date $time"
+            [[ "$format" == "csvhash" ]] && row="$row,$sha256"
+            echo "$row" >> "$manifest_file"
+        done
+    elif [[ "$format" == "tree" ]]; then
+        echo "Archive Tree View:" > "$manifest_file"
+        for f in "${files[@]}"; do
+            indent=$(echo "$f" | awk -F'/' '{print NF-1}')
+            printf '%*s' $((indent*2)) '' >> "$manifest_file"
+            echo "- $(basename "$f")" >> "$manifest_file"
+        done
+        echo >> "$manifest_file"
+        echo "(Compressed/uncompressed sizes not shown in tree view)" >> "$manifest_file"
+    else
+        echo "Archive File List:" > "$manifest_file"
+        for f in "${files[@]}"; do
+            echo "$f" >> "$manifest_file"
+        done
+        echo >> "$manifest_file"
+        echo "(Compressed/uncompressed sizes not shown in text view)" >> "$manifest_file"
+    fi
+
+    if [ -f "$split_parts_file" ]; then
+        echo >> "$manifest_file"
+        echo "Split archive parts:" >> "$manifest_file"
+        cat "$split_parts_file" >> "$manifest_file"
+        echo >> "$manifest_file"
+        echo "To reassemble: cat ${archive}* > combined && [extract as usual]" >> "$manifest_file"
+    fi
+    rm -rf "$tempdir"
+}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -461,12 +648,20 @@ while [[ $# -gt 0 ]]; do
             fi
             shift
             ;;
+        --force|-f)
+            force_overwrite=true
+            shift
+            ;;
         -h|--help)
             show_help
             ;;
         --debug)
             DEBUG=1
             shift
+            ;;
+        --manifest)
+            manifest_format="$2"
+            shift 2
             ;;
         -*)
             echo "Error: Unknown option $1"
@@ -521,18 +716,58 @@ fi
 
 # Set default output name if not specified (must be after compression_tool is set)
 if [ -z "$output" ]; then
-    if [ "$use_7z" = true ]; then
-        output="archive.7z"
-    elif [ "$use_zip" = true ]; then
-        output="archive.zip"
+    if [ ${#input_files[@]} -eq 1 ]; then
+        input_name="${input_files[0]}"
+        # Remove trailing slash for directories
+        input_name="${input_name%/}"
+        if [ -d "$input_name" ]; then
+            # Directory: use full directory name (even if it contains dots)
+            base_name="$(basename "$input_name")"
+        else
+            # File or symlink
+            file_base="$(basename "$input_name")"
+            if [[ "$file_base" == .* && "$file_base" != *.* ]]; then
+                # Hidden file with no extension: use full name
+                base_name="$file_base"
+            elif [[ "$file_base" == .* && "$file_base" == *.* ]]; then
+                # Hidden file with extension: use full name
+                base_name="$file_base"
+            elif [[ "$file_base" == *.* ]]; then
+                # Regular file with extension(s): strip only the last extension
+                base_name="${file_base%.*}"
+            else
+                # Regular file with no extension
+                base_name="$file_base"
+            fi
+        fi
+        if [ "$use_7z" = true ]; then
+            output="${base_name}.7z"
+        elif [ "$use_zip" = true ]; then
+            output="${base_name}.zip"
+        else
+            case "$compression_tool" in
+                pigz|gzip) output="${base_name}.tar.gz" ;;
+                bzip2|pbzip2|lbzip2) output="${base_name}.tar.bz2" ;;
+                xz|pxz) output="${base_name}.tar.xz" ;;
+                "") output="${base_name}.tar" ;;
+                *) output="${base_name}.tar" ;;
+            esac
+        fi
+        echo "ℹ️  No output file specified, using '$output' as the archive name."
     else
-        case "$compression_tool" in
-            pigz|gzip) output="archive.tar.gz" ;;
-            bzip2|pbzip2|lbzip2) output="archive.tar.bz2" ;;
-            xz|pxz) output="archive.tar.xz" ;;
-            "") output="archive.tar" ;;
-            *) output="archive.tar" ;;
-        esac
+        if [ "$use_7z" = true ]; then
+            output="archive.7z"
+        elif [ "$use_zip" = true ]; then
+            output="archive.zip"
+        else
+            case "$compression_tool" in
+                pigz|gzip) output="archive.tar.gz" ;;
+                bzip2|pbzip2|lbzip2) output="archive.tar.bz2" ;;
+                xz|pxz) output="archive.tar.xz" ;;
+                "") output="archive.tar" ;;
+                *) output="archive.tar" ;;
+            esac
+        fi
     fi
 fi
 
@@ -584,6 +819,7 @@ human_readable_size() {
     local units=("B" "KB" "MB" "GB" "TB" "PB")
     local unit=0
     local size
+    local formatted
     
     # Use bc for floating point arithmetic
     size=$bytes
@@ -592,13 +828,16 @@ human_readable_size() {
         unit=$((unit + 1))
     done
     
+    # Sanitize $size to ensure it's a valid float
+    size=$(echo "$size" | awk '{printf "%f", $0}')
+    
     # Format with exactly one decimal place for consistency with Finder
     if [ $unit -gt 0 ]; then
         # Force one decimal place for units larger than bytes
-        formatted=$(printf "%.1f" $size)
+        formatted=$(awk -v val="$size" 'BEGIN {printf "%.1f", val}')
     else
         # For bytes, show as integer
-        formatted=$(printf "%.0f" $size)
+        formatted=$(awk -v val="$size" 'BEGIN {printf "%d", val}')
     fi
     
     echo "${formatted}${units[$unit]}"
@@ -984,26 +1223,44 @@ echo
 
 # Check if output file exists and handle conflicts
 if [ -e "$output" ]; then
-    if [ "$no_prompt" = true ]; then
+    # Gather all associated files: main output, split parts, and metadata
+    part_glob="$output*"
+    found_parts=( )
+    shopt -s nullglob
+    for f in $part_glob; do
+        # Only match real split parts and metadata, not unrelated files
+        if [[ "$f" == "$output" || "$f" =~ \.(aa|ab|ac|ad|ae|af|ag|ah|ai|aj|ak|al|am|an|ao|ap|aq|ar|as|at|au|av|aw|ax|ay|az|ba|bb|bc|bd|be|bf|bg|bh|bi|bj|bk|bl|bm|bn|bo|bp|bq|br|bs|bt|bu|bv|bw|bx|by|bz|z[0-9][0-9]|[0-9][0-9][0-9])$ || "$f" == "${output}.parts.txt" || "$f" == "${output}.parts.sha256" || "$f" == "${output}.sha256" ]]; then
+            found_parts+=("$f")
+        fi
+    done
+    shopt -u nullglob
+    if [ "$force_overwrite" = true ]; then
+        echo "--force specified: Overwriting existing file(s): ${found_parts[*]}"
+        rm -f "${found_parts[@]}"
+    elif [ "$no_prompt" = true ]; then
         # In non-interactive mode, automatically rename
         output=$(get_next_filename "$output")
         echo "⚠️  Output file exists, using: $output"
     else
-        echo "⚠️  Output file '$output' already exists."
+        echo "⚠️  Output file '$output' or associated split parts already exist."
+        if [ ${#found_parts[@]} -gt 1 ]; then
+            echo "    The following files will be affected:"
+            for f in "${found_parts[@]}"; do
+                echo "    $f"
+            done
+        fi
         echo "    Choose an action:"
-        echo "    [O]verwrite"
+        echo "    [O]verwrite all"
         echo "    [R]ename automatically (default)"
         echo "    [C]ancel"
         read -r -t 30 choice || choice="r"  # Default to rename after 30 seconds
-        
-        # Convert to lowercase using tr
         choice=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
-        
         case "$choice" in
             o|overwrite)
-                echo "Overwriting existing file..."
+                echo "Overwriting existing file(s)..."
+                rm -f "${found_parts[@]}"
                 ;;
-            r|rename|"")  # Empty string (Enter key) now defaults to rename
+            r|rename|"")
                 output=$(get_next_filename "$output")
                 echo "Using new filename: $output"
                 ;;
@@ -1012,7 +1269,6 @@ if [ -e "$output" ]; then
                 exit 0
                 ;;
             *)
-                # Default to rename on invalid input
                 output=$(get_next_filename "$output")
                 echo "Invalid choice. Using new filename: $output"
                 ;;
@@ -1154,10 +1410,26 @@ fi
 # Clean up progress monitoring
 cleanup_progress
 
+# Move manifest generation to after archive creation but before encryption
 if [ "${archive_status:-1}" -eq 0 ]; then
     # Get final archive size using ls for more accurate size
     archive_size=$(ls -l "$output" 2>/dev/null | awk '{print $5}')
     archive_size_human=$(human_readable_size $archive_size)
+
+    # Generate manifest if requested (before encryption)
+    if [ -n "$manifest_format" ]; then
+        case "$manifest_format" in
+            tree|text)
+                manifest_ext="txt" ;;
+            csv|csvhash)
+                manifest_ext="csv" ;;
+            *)
+                manifest_ext="txt" ;;
+        esac
+        manifest_file="${output}.${manifest_ext}"
+        write_manifest "$output" "$manifest_format" "$manifest_file"
+        echo "Manifest written to $manifest_file"
+    fi
 
     # Verify archive if requested (before encryption, except for 7z)
     if [ "$verify" = true ] && [ "$use_7z" != true ]; then
@@ -1176,8 +1448,10 @@ if [ "${archive_status:-1}" -eq 0 ]; then
         if [ "$encrypt_method" = "gpg" ]; then
             # Store original output name
             original_output="$output"
-            # Update output to include .gpg extension
-            output="${output}.gpg"
+            # Only append .gpg if not already present
+            if [[ "$output" != *.gpg ]]; then
+              output="${output}.gpg"
+            fi
             
             if [ -n "$recipient" ]; then
                 # Public key encryption
@@ -1307,6 +1581,12 @@ show_help() {
   echo "                       • bzip2/pbzip2/lbzip2: Use bzip2 or parallel variants"
   echo "                       • xz/pxz: Use xz or parallel xz"
   echo "                       • If not specified, automatically uses parallel tools when available"
+  echo "  --manifest <format>   Generate a manifest file listing the contents of the archive. Formats:"
+  echo "                       • tree: Hierarchical tree view (.txt)"
+  echo "                       • text: Flat list of all files (.txt)"
+  echo "                       • csv: CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp (.csv)"
+  echo "                       • csvhash: Like csv, but also includes a SHA256 hash per file (.csv)"
+  echo "  -f, --force           Automatically overwrite any existing output file or split parts without prompting"
   echo "  -h, --help            Show this help message"
   echo "  --version             Show version information"
   echo ""
@@ -1316,7 +1596,8 @@ show_help() {
   echo "  fancy-tar --7z --compression=9 -o archive.7z large_folder/"
   echo "  fancy-tar --split-size=100M -o archive.tar.gz huge_folder/"
   echo "  fancy-tar --verify -o archive.tar.gz important_files/"
-  echo "  fancy-tar --use=gzip -o archive.tar.gz files/"  # Force gzip instead of pigz
+  echo "  fancy-tar --use=gzip -o archive.tar.gz files/"  # Force gzip instead of pigz"
+  echo "  fancy-tar --manifest csvhash -o archive.tar.gz files/"  # Generate CSV with SHA256 hashes"
   echo ""
   echo "Note: When using --split-size, the archive will be split into multiple parts"
   echo "      with the specified size. For example, with --split-size=100M, a 500MB"

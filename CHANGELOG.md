@@ -143,3 +143,14 @@
 - ✅ `--version`, `--self-test` re-enabled
 - ✅ Permission, password, and error handling fixed
 - ✅ Desktop notification and `-x` folder opening
+
+## [Unreleased]
+### Added
+- `--force` flag for split archives: Automatically overwrite all existing split parts without prompting when using `--split-size`. Useful for scripting or automation.
+- For 7z split archives, if `--verify` is set, fancy-tar now automatically runs `7z t` on the first part after creation to verify the whole set.
+- Improved documentation and completions for split archive features, including reassembly instructions and the new `--force` flag.
+- Every time an archive is split, a <output>.parts.txt file is created listing all split parts and their sizes (in bytes).
+- When --hash is used with split archives, a <output>.parts.sha256 file is created with SHA256 hashes for each part, and a warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
+
+### Fixed
+- Progress display: Fixed 'invalid number' errors in archive size formatting during progress display. The size formatting is now robust for all file and directory inputs.

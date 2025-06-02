@@ -96,6 +96,16 @@ Force specific compression tool (gzip, bzip2, xz, etc.)
 .TP
 .B \-\-print\-filename
 Output only the final archive filename (useful for scripting)
+.TP
+.B -f, --force
+Automatically overwrite any existing output file or split parts without prompting. Useful for scripting or automation.
+.TP
+.B \-\-manifest <format>
+Generate a manifest file listing the contents of the archive in the specified format. Formats:
+  tree     - Hierarchical tree view of files in the archive
+  text     - Flat list of all files in the archive
+  csv      - CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp
+  csvhash  - Like csv, but also includes a SHA256 hash per file (computed by extracting each file to a temp dir and hashing it)
 .SH PROGRESS REPORTING
 The tool shows detailed progress information including:
 .IP \(bu 2
@@ -148,3 +158,21 @@ Written by Jason Giambona <jason.giambona@gmail.com>
 .SH COPYRIGHT
 Copyright © 2024 Jason Giambona
 This is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+.SH SPLIT ARCHIVES
+When using --split-size, the archive will be split into multiple parts. After creation, the script prints clear instructions for reassembling and extracting your archive:
+
+Every time an archive is split, a <output>.parts.txt file is created listing all split parts and their sizes (in bytes).
+If --hash is used with split archives, a <output>.parts.sha256 file is created with SHA256 hashes for each part. A warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
+
+For tar-based archives:
+  cat split.tar.gz* > combined.tar.gz
+  gzip -t combined.tar.gz   # or   tar -tf combined.tar.gz
+  tar -xzf combined.tar.gz
+
+For 7z archives:
+  7z x split.7z.001
+  (Make sure all .7z.0* parts are present in the same directory)
+
+For zip archives:
+  zip -F split.zip --out combined.zip
+  unzip combined.zip

@@ -1,4 +1,4 @@
-complete -c fancy-tar -s o -l output -d 'Specify output file name' -r
+complete -c fancy-tar -s o -l output -d 'Specify output file name (for split archives, a .parts.txt file will also be created)' -r
 complete -c fancy-tar -s n -d 'Create uncompressed tar archive'
 complete -c fancy-tar -s s -d 'Use slower but better compression'
 complete -c fancy-tar -s x -l open-after -d 'Open the output folder when done (macOS/Linux)'
@@ -13,9 +13,11 @@ complete -c fancy-tar -l print-filename -d 'Output only the final archive filena
 complete -c fancy-tar -l version -d 'Show version information'
 complete -c fancy-tar -l help -d 'Show help message'
 complete -c fancy-tar -l use -d 'Force specific compression tool' -r -a "gzip pigz bzip2 pbzip2 lbzip2 xz pxz"
+complete -c fancy-tar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
+complete -c fancy-tar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
 
 # Add completions for aliases
-complete -c fancytar -s o -l output -d 'Specify output file name' -r
+complete -c fancytar -s o -l output -d 'Specify output file name (for split archives, a .parts.txt file will also be created)' -r
 complete -c fancytar -s n -d 'Create uncompressed tar archive'
 complete -c fancytar -s s -d 'Use slower but better compression'
 complete -c fancytar -s x -l open-after -d 'Open the output folder when done (macOS/Linux)'
@@ -29,8 +31,10 @@ complete -c fancytar -l zip -d 'Create a .zip archive'
 complete -c fancytar -l print-filename -d 'Output only the final archive filename'
 complete -c fancytar -l version -d 'Show version information'
 complete -c fancytar -l help -d 'Show help message'
+complete -c fancytar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
+complete -c fancytar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
 
-complete -c ftar -s o -l output -d 'Specify output file name' -r
+complete -c ftar -s o -l output -d 'Specify output file name (for split archives, a .parts.txt file will also be created)' -r
 complete -c ftar -s n -d 'Create uncompressed tar archive'
 complete -c ftar -s s -d 'Use slower but better compression'
 complete -c ftar -s x -l open-after -d 'Open the output folder when done (macOS/Linux)'
@@ -44,3 +48,5 @@ complete -c ftar -l zip -d 'Create a .zip archive'
 complete -c ftar -l print-filename -d 'Output only the final archive filename'
 complete -c ftar -l version -d 'Show version information'
 complete -c ftar -l help -d 'Show help message'
+complete -c ftar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
+complete -c ftar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
