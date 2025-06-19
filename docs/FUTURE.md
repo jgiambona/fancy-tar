@@ -28,8 +28,8 @@ This document tracks features and improvements to consider and/or implement for 
 
 3. **Security Enhancements**
     - Add key file support for encryption
-    - Add support for encrypted file names
-    - Add support for encrypted metadata
+    - Add support for encrypted file names (7z only)
+    - Add support for encrypted metadata (7z only)
 
 ## User Experience
 
@@ -43,36 +43,6 @@ This document tracks features and improvements to consider and/or implement for 
     - Add configuration option naming consistency with CLI
     - Add configuration validation and error checking
 
-
-5. **Interactive Mode**
-    - Add file selection interface with checkboxes
-    - Add compression options selection menu
-    - Add encryption settings configuration
-    - Add progress visualization with detailed stats
-    - Add interactive help and documentation
-    - Add keyboard shortcuts for common operations
-    - Add mouse support for file selection
-    - Add multi-step wizard for complex operations
-    - Add interactive file extraction with individual file selection
-    - Add manifest generation with multiple output formats
-      - Tree view
-      - Text file
-      - CSV file
-
-6. **Archive Inspection**
-    - Add `--manifest` option to generate detailed file listings
-      - List all files in archive with paths
-      - Show compressed and uncompressed sizes
-      - Show compression ratios
-      - Show file attributes and timestamps
-      - Support multiple output formats:
-        - Tree view (`--manifest=tree`)
-        - Text file (`--manifest=text`)
-        - CSV file (`--manifest=csv`)
-        - CSV with SHA256 hash (`--manifest=csvhash`)
-      - CSV columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp
-      - CSVHASH columns: All CSV columns plus SHA256 hash per file
-      - Include warnings or information in the manifest output file, such as split archive reassembly instructions, a list of split parts, etc.
 
 ## Per-File Archiving Rules via Config File
 
@@ -170,10 +140,6 @@ rules:
 
 ---
 
-### Status
-
-**Planned** — Not yet implemented.
-
 ## Implementation Priority
 
 Features are listed in rough order of priority, but actual implementation order may vary based on:
@@ -181,15 +147,6 @@ Features are listed in rough order of priority, but actual implementation order 
 - Technical feasibility
 - Dependencies between features
 - Available development resources
-
-## Version Planning
-
-Future versions will focus on implementing these features in logical groups:
-
-- v1.7.x: Bug fixes and improvements to core features.
-- v1.8.x: Focus on file selection and management features
-- v1.9.x: Focus on security and encryption enhancements
-- v2.0.x: Focus on user experience and integration features
 
 ## Contributing
 
