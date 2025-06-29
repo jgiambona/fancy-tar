@@ -27,10 +27,12 @@ jobs:
             echo "Error: Version mismatch in fancy-tar.spec"
             exit 1
           fi
-          # Check Debian changelog
-          DEB_VERSION=$(head -n1 debian/changelog | cut -d' ' -f2 | tr -d '()')
+          # Check Debian changelog - handle both formats: 1.8.3 and 1.8.3-1
+          DEB_VERSION=$(head -n1 debian/changelog | cut -d' ' -f2 | tr -d '()' | cut -d'-' -f1)
           if [ "$VERSION" != "$DEB_VERSION" ]; then
             echo "Error: Version mismatch in debian/changelog"
+            echo "Expected: $VERSION"
+            echo "Found: $DEB_VERSION"
             exit 1
           fi
           # Check man page

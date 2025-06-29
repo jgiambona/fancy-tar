@@ -14,12 +14,30 @@ if [ -f fancy-tar.spec ]; then
     echo "✓ Updated fancy-tar.spec"
 fi
 
-# Update debian/changelog if dch is available
-if command -v dch >/dev/null 2>&1 && [ -f debian/changelog ]; then
-    dch --newversion "$VERSION-1" "Update version to $VERSION" --distribution stable
+# Update debian/changelog if it exists
+if [ -f debian/changelog ]; then
+    # Get current date in RFC format
+    CURRENT_DATE=$(date -R)
+    
+    # Create new changelog entry
+    cat > debian/changelog.new << EOF
+fancy-tar ($VERSION-1) unstable; urgency=medium
+
+  * Release v$VERSION
+  * Update version and changelog
+
+ -- $(git config user.name) <$(git config user.email)>  $CURRENT_DATE
+
+EOF
+    
+    # Append existing changelog entries (skip the first entry)
+    tail -n +2 debian/changelog >> debian/changelog.new
+    
+    # Replace the original file
+    mv debian/changelog.new debian/changelog
     echo "✓ Updated debian/changelog"
 else
-    echo "⚠ Skipping debian/changelog update (dch not found)"
+    echo "⚠ Skipping debian/changelog update (file not found)"
 fi
 
 # Update docs/fancy-tar.1 if it exists
@@ -52,4 +70,29 @@ if [ -f README.md ]; then
     echo "✓ Updated README.md"
 fi
 
+# Verify version consistency
+echo ""
+echo "🔍 Verifying version consistency..."
+VERSION_FILES=(
+    "VERSION:$VERSION"
+    "fancy-tar.spec:$(grep '^Version:' fancy-tar.spec | awk '{print $2}' 2>/dev/null || echo 'not found')"
+    "debian/changelog:$(head -n1 debian/changelog | cut -d' ' -f2 | tr -d '()' | cut -d'-' -f1 2>/dev/null || echo 'not found')"
+    "docs/fancy-tar.1:$(grep '\.TH FANCY-TAR' docs/fancy-tar.1 | awk '{print $6}' | tr -d '"' 2>/dev/null || echo 'not found')"
+    "scripts/fancy_tar_progress.sh:$(grep '^VERSION=' scripts/fancy_tar_progress.sh | cut -d'"' -f2 2>/dev/null || echo 'not found')"
+)
+
+for file_version in "${VERSION_FILES[@]}"; do
+    file="${file_version%:*}"
+    found_version="${file_version#*:}"
+    
+    if [ "$found_version" = "not found" ]; then
+        echo "⚠  $file: $found_version"
+    elif [ "$found_version" = "$VERSION" ]; then
+        echo "✅ $file: $found_version"
+    else
+        echo "❌ $file: expected $VERSION, found $found_version"
+    fi
+done
+
+echo ""
 echo "Version update complete!" 
