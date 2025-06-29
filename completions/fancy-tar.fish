@@ -15,6 +15,10 @@ complete -c fancy-tar -l help -d 'Show help message'
 complete -c fancy-tar -l use -d 'Force specific compression tool' -r -a "gzip pigz bzip2 pbzip2 lbzip2 xz pxz"
 complete -c fancy-tar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
 complete -c fancy-tar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
+complete -c fancy-tar -l exclude -d 'Exclude files matching pattern' -r
+complete -c fancy-tar -l include -d 'Include only files matching pattern' -r
+complete -c fancy-tar -l files-from -d 'Read list of files to include from file' -r -a "(ls)"
+complete -c fancy-tar -l verbose -d 'Show each file being processed with file count display'
 
 # Add completions for aliases
 complete -c fancytar -s o -l output -d 'Specify output file name (for split archives, a .parts.txt file will also be created)' -r
@@ -33,6 +37,10 @@ complete -c fancytar -l version -d 'Show version information'
 complete -c fancytar -l help -d 'Show help message'
 complete -c fancytar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
 complete -c fancytar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
+complete -c fancytar -l exclude -d 'Exclude files matching pattern' -r
+complete -c fancytar -l include -d 'Include only files matching pattern' -r
+complete -c fancytar -l files-from -d 'Read list of files to include from file' -r -a "(ls)"
+complete -c fancytar -l verbose -d 'Show each file being processed with file count display'
 
 complete -c ftar -s o -l output -d 'Specify output file name (for split archives, a .parts.txt file will also be created)' -r
 complete -c ftar -s n -d 'Create uncompressed tar archive'
@@ -50,3 +58,7 @@ complete -c ftar -l version -d 'Show version information'
 complete -c ftar -l help -d 'Show help message'
 complete -c ftar -s f -l force -d 'Automatically overwrite any existing output file or split parts without prompting'
 complete -c ftar -l manifest -d 'Generate a manifest file listing the contents of the archive' -r -a "tree text csv csvhash"
+complete -c ftar -l exclude -d 'Exclude files matching pattern' -r
+complete -c ftar -l include -d 'Include only files matching pattern' -r
+complete -c ftar -l files-from -d 'Read list of files to include from file' -r -a "(ls)"
+complete -c ftar -l verbose -d 'Show each file being processed with file count display'

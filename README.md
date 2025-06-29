@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/version-1.7.5-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
+[![Version](https://img.shields.io/badge/version-1.8.3-blue.svg)](https://github.com/jgiambona/fancy-tar/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/shell-bash-89E051.svg)](https://www.gnu.org/software/bash/)
 [![Linux](https://img.shields.io/badge/platform-linux-lightgrey.svg)](https://www.kernel.org/)
@@ -15,17 +15,17 @@
 ## 📑 Table of Contents
 
 - [Installation](#-installation)
+- [Quickstart](#quickstart)
 - [Usage](#-usage)
 - [Option Compatibility by Compression Method](#option-compatibility-by-compression-method)
-- [Quickstart](#quickstart)
 - [Compression Methods](#compression-methods)
 - [Security Features](#-security-features)
 - [Examples](#-examples)
-- [Contributing](#-contributing)
+- [Advanced Features](#-advanced-features)
+- [Platform-specific Features](#platform-specific-features)
+- [Development & Testing](#development--testing)
 - [License](#-license)
 - [Acknowledgments](#-acknowledgments)
-- [Test Scripts](#test-scripts)
-- [macOS Drag-and-Drop Quick Action (Automator)](#macos-drag-and-drop-quick-action-automator)
 
 ## ✨ Features
 
@@ -42,6 +42,8 @@
 - 🔄 Desktop notifications and folder opening
 - 🧹 Automatic cleanup of temporary files
 - 📑 **Split archive support:** Prints a summary of all split parts, checks for missing/empty parts, provides reassembly instructions, and handles errors and user prompts for existing parts.
+- `--verbose`              Show each file being processed with file count display [001/234]
+- `--debug`                 Enable debug output and show all commands being executed
 
 ## Why Use fancy-tar?
 - No need to remember complex tar/zip/7z commands
@@ -52,14 +54,29 @@
 
 ## 🚀 Installation
 
-### Via Homebrew (macOS)
+> 📖 **For detailed installation instructions and troubleshooting, see [INSTALL.md](INSTALL.md)**
 
+### 🎯 Quick Install (Recommended for beginners)
+
+**One-liner installation (works on most systems):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/jgiambona/fancy-tar/main/install-curl.sh | bash
+```
+
+**For macOS users (multiple options, no Xcode required):**
+```bash
+# Download and run the macOS installer
+curl -fsSL https://raw.githubusercontent.com/jgiambona/fancy-tar/main/install-macos.sh | bash
+```
+
+### 📦 Package Managers
+
+#### Via Homebrew (macOS)
 ```bash
 brew install jgiambona/fancy-tar/fancy-tar
 ```
 
-### Via Debian Package (Debian/Ubuntu)
-
+#### Via Debian Package (Debian/Ubuntu)
 ```bash
 # Download the Debian package from the latest release
 curl -LO https://github.com/jgiambona/fancy-tar/releases/download/v1.7.0/fancy-tar_1.7.0-1_all.deb
@@ -71,8 +88,7 @@ sudo dpkg -i fancy-tar_1.7.0-1_all.deb
 sudo apt-get install -f
 ```
 
-### Via RPM (Fedora/RHEL)
-
+#### Via RPM (Fedora/RHEL)
 ```bash
 # Download the RPM package from the latest release
 curl -LO https://github.com/jgiambona/fancy-tar/releases/download/v1.7.0/fancy-tar-1.7.0-1.noarch.rpm
@@ -91,8 +107,29 @@ sudo dnf install ./fancy-tar-1.7.0-1.noarch.rpm
 sudo yum install ./fancy-tar-1.7.0-1.noarch.rpm
 ```
 
-### Manual Installation
+### 🔧 Manual Installation
 
+#### Option 1: Interactive Installer
+```bash
+# Clone the repository
+git clone https://github.com/jgiambona/fancy-tar.git
+cd fancy-tar
+
+# Run the interactive installer
+./install.sh
+```
+
+#### Option 2: Quick Installer (minimal interaction)
+```bash
+# Clone the repository
+git clone https://github.com/jgiambona/fancy-tar.git
+cd fancy-tar
+
+# Run the quick installer
+./quick-install.sh
+```
+
+#### Option 3: Manual Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/jgiambona/fancy-tar.git
@@ -134,7 +171,20 @@ sudo yum install ./fancy-tar-1.7.0-1.noarch.rpm
    sudo gzip /usr/local/share/man/man1/fancy-tar.1
    ```
 
-### Dependencies
+### 📋 Installation Options Summary
+
+| Method | Ease | Requirements | Best For | Updates |
+|--------|------|--------------|----------|---------|
+| **One-liner** | ⭐⭐⭐⭐⭐ | curl | Beginners | Manual |
+| **macOS installer** | ⭐⭐⭐⭐⭐ | macOS only | macOS users | Manual |
+| **Homebrew** | ⭐⭐⭐⭐ | Homebrew | macOS users with Homebrew | `brew upgrade` |
+| **Package managers** | ⭐⭐⭐⭐ | Package manager | Linux users | Package manager |
+| **Interactive installer** | ⭐⭐⭐ | git, basic dependencies | Users who want control | Manual |
+| **Manual** | ⭐⭐ | git, manual steps | Advanced users | Manual |
+
+**Note:** The one-liner and macOS installer work without requiring Xcode, Homebrew, or other development tools.
+
+### 🔍 Dependencies
 
 - **Required:**
   - `bash`
@@ -149,6 +199,8 @@ sudo yum install ./fancy-tar-1.7.0-1.noarch.rpm
   - `pigz` (for parallel gzip compression)
   - `pbzip2` (for parallel bzip2 compression)
   - `pxz` (for parallel xz compression)
+
+**Note:** The quick installers will automatically install essential dependencies for you.
 
 ## 📚 Usage
 
@@ -178,9 +230,13 @@ ftar [options] <files/directories>
 - `--7z`                  Create a .7z archive (with optional password)
 - `--compression=<0-9>`   Set compression level for 7z archives (0=store, 9=ultra)
 - `--use=<tool>`          Force specific compression tool (gzip, pigz, bzip2, pbzip2, lbzip2, xz, pxz)
-- `--print-filename`      Output only the final archive filename (for scripting)
+- `--print-filename`      Output only the final archive filename (for scripting). For split archives, outputs all split part filenames, one per line, to stdout. For non-split archives, outputs the single filename. This makes scripting with split archives easier and more robust.
 - `-f`, `--force`    Automatically overwrite any existing output file or split parts without prompting (useful for scripting or automation)
 - `--manifest <format>`  Generate a manifest file listing the contents of the archive. Formats: tree (tree view), text (flat list), csv (detailed CSV), csvhash (CSV with SHA256 hash per file)
+- `--exclude <pattern>`      Exclude files matching the given pattern (can be used multiple times)
+- `--include <pattern>`      Include only files matching the given pattern (can be used multiple times)
+- `--files-from <file>`      Read list of files to include from a file (one per line; supports glob patterns)
+- `--verbose`                Show each file being processed with file count display [001/234]
 
 **Tip:** If you do not specify <kbd>--zip</kbd> or <kbd>--7z</kbd>, the default output is a tar archive (with gzip compression if available).
 
@@ -192,36 +248,45 @@ Some options are only available with certain compression methods. The table belo
 
 | Option                        | tar/tar.gz | zip  | 7z   |
 |-------------------------------|:----------:|:----:|:----:|
-| <a name="opt-output"></a><kbd>-o</kbd>, <kbd>--output</kbd>                |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-n"></a><kbd>-n</kbd> (no compression)         |    ✔️      | ❌   | ❌   |
-| <a name="opt-s"></a><kbd>-s</kbd> (slower/better compression) | ✔️      | ❌   | ❌   |
-| <a name="opt-x"></a><kbd>-x</kbd>, <kbd>--open-after</kbd> (open after)             |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-tree"></a><kbd>-t</kbd>, <kbd>--tree</kbd>                  |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-no-recurse"></a><kbd>--no-recurse</kbd>                |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-hash"></a><kbd>--hash</kbd>                      |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    ✔️      | ❌   | ❌   |
-| <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | ✔️   | ✔️   |
-| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    ✔️      | ❌   | ❌   |
-| <a name="opt-password"></a><kbd>--password</kbd>¹                  |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-verify"></a><kbd>--verify</kbd>                    |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    ✔️      | ✔️   | ✔️   |
-| <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | ✔️   | ❌   |
-| <a name="opt-7z"></a><kbd>--7z</kbd>                        |    ❌      | ❌   | ✔️   |
-| <a name="opt-compression"></a><kbd>--compression=&lt;0-9&gt;</kbd>         |    ❌      | ❌   | ✔️   |
-| <a name="opt-use"></a><kbd>--use=&lt;tool&gt;</kbd>                |    ✔️²      | ❌   | ❌   |
-| <a name="opt-print-filename"></a><kbd>--print-filename</kbd>            |    ✔️      | ✔️   | ✔️   |
+| <a name="opt-output"></a><kbd>-o</kbd>, <kbd>--output</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-n"></a><kbd>-n</kbd> (no compression)         |    <span style="color:green">✔️</span>      | ❌   | ❌   |
+| <a name="opt-s"></a><kbd>-s</kbd> (slower/better compression) | <span style="color:green">✔️</span>      | ❌   | ❌   |
+| <a name="opt-x"></a><kbd>-x</kbd>, <kbd>--open-after</kbd> (open after)             |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-tree"></a><kbd>-t</kbd>, <kbd>--tree</kbd>                  |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-no-recurse"></a><kbd>--no-recurse</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-hash"></a><kbd>--hash</kbd>                      |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    <span style="color:green">✔️</span>      | ❌   | ❌   |
+| <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    <span style="color:green">✔️</span>      | ❌   | ❌   |
+| <a name="opt-password"></a><kbd>--password</kbd>¹                  |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-verify"></a><kbd>--verify</kbd>                    |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | <span style="color:green">✔️</span>   | ❌   |
+| <a name="opt-7z"></a><kbd>--7z</kbd>                        |    ❌      | ❌   | <span style="color:green">✔️</span>   |
+| <a name="opt-compression"></a><kbd>--compression=&lt;0-9&gt;</kbd>         |    ❌      | ❌   | <span style="color:green">✔️</span>   |
+| <a name="opt-use"></a><kbd>--use=&lt;tool&gt;</kbd>                |    <span style="color:green">✔️</span>²      | ❌   | ❌   |
+| <a name="opt-print-filename"></a><kbd>--print-filename</kbd>            |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-verbose"></a><kbd>--verbose</kbd>                    |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
 
-✔️ = Supported  ❌ = Not Supported
+<span style="color:green">✔️</span> = Supported  ❌ = Not Supported
 
 ¹ <kbd>--password</kbd> for tar/tar.gz is only used with <kbd>--encrypt=gpg</kbd> or <kbd>--encrypt=openssl</kbd>.
 
 ² <kbd>--use</kbd> valid choices: <kbd>gzip</kbd>, <kbd>pigz</kbd>, <kbd>bzip2</kbd>, <kbd>pbzip2</kbd>, <kbd>lbzip2</kbd>, <kbd>xz</kbd>, <kbd>pxz</kbd> (tar/tar.gz only).
 
-³ <kbd>--encrypt</kbd> for 7z uses 7z's built-in AES-256 encryption (not GPG/OpenSSL). For zip, it uses classic zip password protection. For tar/tar.gz, it uses GPG or OpenSSL as specified.
+³ <kbd>--encrypt</kbd> behavior varies by format:
+   • For tar/tar.gz: Uses GPG or OpenSSL as specified
+   • For 7z: Uses 7z's built-in AES-256 encryption (same as <kbd>--password</kbd>)
+   • For zip: Creates unencrypted zip, then encrypts with GPG (output becomes .zip.gpg)
+   
+   <kbd>--password</kbd> behavior:
+   • For tar/tar.gz: Only used with <kbd>--encrypt=gpg</kbd> or <kbd>--encrypt=openssl</kbd>
+   • For 7z: Uses 7z's built-in AES-256 encryption
+   • For zip: Uses zip's native password protection (built into the zip file)
 
 See the [Examples](#💡-examples) section below for usage patterns with each compression method.
 
-### Quickstart
+## 🚀 Quickstart
 
 | Task                                 | Example Command |
 |--------------------------------------|-----------------|
@@ -239,58 +304,6 @@ See the [Examples](#💡-examples) section below for usage patterns with each co
 | Verify archive after creation        | [`fancy-tar --verify folder/ -o archive.tar.gz`](#quickstart) |
 | **Open output folder after creation**| [`fancy-tar -x folder/ -o archive.tar.gz`](#quickstart) |
 | **Open output folder after creation (long option)**| [`fancy-tar --open-after folder/ -o archive.tar.gz`](#quickstart) |
-
-### Compression Methods
-
-The tool automatically uses parallel compression tools when available:
-- gzip → pigz (parallel gzip)
-- bzip2 → pbzip2 (parallel bzip2)
-- xz → pxz (parallel xz)
-
-**Tip:** Parallel tools like <kbd>pigz</kbd>, <kbd>pbzip2</kbd>, and <kbd>pxz</kbd> can significantly speed up compression on multi-core systems.
-
-You can force a specific compression tool using the <a href="#opt-use"><kbd>--use</kbd></a> option:
-```bash
-# Force using gzip instead of pigz
-fancy-tar --use=gzip -o archive.tar.gz files/
-
-# Force using bzip2 instead of pbzip2
-fancy-tar --use=bzip2 -o archive.tar.bz2 files/
-
-# Force using xz instead of pxz
-fancy-tar --use=xz -o archive.tar.xz files/
-```
-
-## 🔒 Security Features
-
-- **Password Handling:**
-  - 🔐 Interactive password prompts are masked
-  - 🔒 Terminal settings are properly restored
-  - 🚫 No password storage or logging
-
-- **Encryption Options:**
-  - 🔐 GPG (recommended for sensitive data)
-    - Supports both symmetric (password) and asymmetric (public key) encryption
-    - Uses AES-256 for symmetric encryption
-  - 🔒 OpenSSL (strong AES-256 encryption)
-    - Uses PBKDF2 for key derivation
-    - Includes salt for better security
-  - 🔐 7z (strong encryption)
-    - Uses AES-256 encryption when <kbd>--encrypt</kbd> or <kbd>--password</kbd> is provided with <kbd>--7z</kbd>
-    - Encrypts both file contents and headers
-    - Supports solid compression
-    - Uses maximum compression by default
-    - Can be extracted with any 7z-compatible tool
-    - Configurable compression level (0-9)
-      - 0: Store (no compression)
-      - 1: Fastest
-      - 5: Normal (default)
-      - 9: Ultra (very slow)
-      - ⚠️ High levels (8-9) can be extremely slow
-  - ⚠️ **ZIP encryption (not recommended for sensitive data)**
-    - **Uses classic ZIP password protection**
-    - **Easily broken with modern tools**
-    - **No integrity or authenticity protection**
 
 ## 💡 Examples
 
@@ -344,65 +357,210 @@ fancy-tar secret/ --encrypt=gpg --recipient user@example.com -o secret.tar.gz
 # Create OpenSSL-encrypted archive with password
 fancy-tar private/ --encrypt=openssl --password -o private.tar.gz
 
-# Create a ZIP archive with encryption
+# Create a ZIP archive with native password protection
 fancy-tar sensitive/ --zip --password -o secure.zip
+
+# Create a ZIP archive, then encrypt with GPG (creates secure.zip.gpg)
+fancy-tar sensitive/ --zip --encrypt -o secure.zip
+
+# Create a 7z archive with built-in AES-256 encryption
+fancy-tar sensitive/ --7z --password -o secure.7z
+
+# Create a 7z archive with built-in AES-256 encryption (same as --password)
+fancy-tar sensitive/ --7z --encrypt -o secure.7z
 ```
+
+### Encryption Methods Explained
+
+**For ZIP Archives:**
+- `--password`: Uses zip's native password protection (built into the zip file)
+  - Faster and more compatible with standard zip tools
+  - Less secure than modern encryption methods
+  - Output: `archive.zip`
+- `--encrypt`: Creates unencrypted zip, then encrypts with GPG
+  - More secure (GPG AES-256 encryption)
+  - Requires GPG to decrypt
+  - Output: `archive.zip.gpg`
+
+**For 7z Archives:**
+- `--password` and `--encrypt` both use 7z's built-in AES-256 encryption
+  - Both options behave identically
+  - Very secure encryption
+  - Output: `archive.7z`
+
+**For tar/tar.gz Archives:**
+- `--encrypt=gpg`: Uses GPG encryption (symmetric or public key)
+- `--encrypt=openssl`: Uses OpenSSL AES-256 encryption
+- `--password`: Required for symmetric encryption with either method
+
+**Password Prompting:**
+- If no password is provided when encryption is requested, the script will prompt interactively
+- In non-interactive mode, a default password is used for automation
+
+### Split Archives
+```bash
+# Create a split tar.gz archive
+fancy-tar huge_folder/ --split-size=100M -o split.tar.gz
+
+# Create a split zip archive
+fancy-tar huge_folder/ --zip --split-size=500M -o split.zip
+
+# Create a split 7z archive
+fancy-tar huge_folder/ --7z --split-size=1G -o split.7z
+
+# Use --print-filename with split archives
+output_files=$(fancy-tar huge_folder/ --split-size=100M -o split.tar.gz --print-filename)
+while IFS= read -r part; do
+    echo "Processing: $part"
+done <<< "$output_files"
+```
+
+### File Selection
+```bash
+# Exclude all .log and .tmp files
+fancy-tar project/ --exclude="*.log" --exclude="*.tmp" -o project.tar.gz
+
+# Include only .txt and .md files
+fancy-tar docs/ --include="*.txt" --include="*.md" -o docs.tar.gz
+
+# Use a file list (one file or pattern per line)
+echo -e "src/*.c\nsrc/*.h\nREADME.md" > filelist.txt
+fancy-tar --files-from filelist.txt -o sources.tar.gz
+
+# File selection works with all archive types
+fancy-tar project/ --exclude="*.log" --exclude="*.tmp" --zip -o project.zip
+fancy-tar docs/ --include="*.txt" --include="*.md" --7z -o docs.7z
+fancy-tar --files-from filelist.txt --7z -o sources.7z
+```
+
+### Debug and Learning
+```bash
+# See all commands being executed (useful for learning and debugging)
+fancy-tar project/ --debug -o debug.tar.gz
+
+# Show each file being processed with file count
+fancy-tar project/ --verbose -o verbose.tar.gz
+
+# Debug with different archive types
+fancy-tar project/ --debug --zip -o debug.zip
+fancy-tar project/ --debug --7z -o debug.7z
+
+# Debug with file selection
+fancy-tar project/ --debug --exclude="*.log" -o debug_filtered.tar.gz
+```
+
+**Format for --files-from:**
+- Each line should contain a file path or glob pattern (e.g., `src/*.c`)
+- Blank lines and lines starting with `#` are ignored
+- Example:
+  ```
+  src/*.c
+  src/*.h
+  README.md
+  # This is a comment
+  docs/*.md
+  ```
+
+## 🔧 Advanced Features
 
 ### Split Archives
 
-When you use the `--split-size` option, fancy-tar will split the archive into multiple parts of the specified size. After creation, the script:
-- Prints a summary of all split parts, including their sizes
-- Warns if any part is missing or empty
-- Skips verification (integrity check) for split archives, since verification must be done after reassembly
-- Provides clear instructions for reassembling and verifying the archive
-- Prompts if split parts already exist, allowing you to overwrite, rename, or cancel
-- Cleans up all split parts if the operation fails
+fancy-tar supports splitting large archives into multiple parts using the `--split-size` option. This is useful for distributing large files, uploading to services with file size limits, or storing on media with limited capacity.
 
-**Example output:**
-```
-✅ Split archive created successfully. Parts:
-   split.tar.gz (50.0MB)
-   split.tar.gz.ab (50.0MB)
-   split.tar.gz.ac (50.0MB)
+#### How to Use
 
-To reassemble and verify your split archive:
-   cat split.tar.gz* > combined.tar.gz
-   gzip -t combined.tar.gz   # or   tar -tf combined.tar.gz
-```
-For 7z split archives:
-```
-To reassemble and extract:
-   7z x split.7z.001
-   (Make sure all .7z.0* parts are present in the same directory)
-```
+Add the `--split-size=<size>` option to your command. For example:
 
-**Note:** Verification (`--verify`) is skipped for split archives. You must reassemble all parts before verifying integrity.
-
-**Required tools:**
-- `split` (for tar-based split archives)
-- `7z` (for 7z split archives)
-- `zip` (for zip split archives)
-
-If any required tool is missing, the script will print an actionable error message.
-
-**User prompts:**
-- If split parts matching the output name already exist, you will be prompted to overwrite, rename, or cancel.
-
-**Error handling:**
-- If the split operation fails, all split parts are cleaned up to avoid confusion.
-
-**Example usage:**
 ```bash
 fancy-tar huge_folder/ --split-size=100M -o split.tar.gz
-# Output will include a summary of parts and reassembly instructions
 ```
 
-### Verification
+- The archive will be split into parts of the specified size (e.g., 100M, 1G).
+- Supported for tar, zip, and 7z formats.
+- You can specify the output file name with `-o` or `--output`.
+- Use the `--force` flag to automatically overwrite any existing output file or split parts without prompting.
+
+#### Output and Naming
+
+- The script prints a summary of all split parts created, including their sizes.
+- A `<output>.parts.txt` file is created listing all split parts and their sizes (in bytes).
+- If split parts matching the output name already exist, you will be prompted to overwrite, rename, or cancel.
+- You can specify a custom prefix for split parts by choosing the output file name.
+- Naming conventions:
+  - For tar: `split.tar.gz`, `split.tar.gz.ab`, `split.tar.gz.ac`, ...
+  - For 7z: `split.7z.001`, `split.7z.002`, ...
+  - For zip: `split.zip`, `split.z01`, `split.z02`, ...
+
+#### How to Reassemble and Extract
+
+After splitting, the script prints clear instructions for reassembling and extracting your archive:
+
+- **For tar-based archives:**
+  ```bash
+  cat split.tar.gz* > combined.tar.gz
+  gzip -t combined.tar.gz   # or   tar -tf combined.tar.gz
+  # Then extract as usual:
+  tar -xzf combined.tar.gz
+  ```
+- **For 7z archives:**
+  ```bash
+  7z x split.7z.001
+  # (Make sure all .7z.0* parts are present in the same directory)
+  ```
+- **For zip archives:**
+  ```bash
+  zip -F split.zip --out combined.zip
+  unzip combined.zip
+  ```
+
+#### Verification
 
 - For 7z split archives, if you use the `--verify` flag, fancy-tar will automatically run `7z t` on the first part after creation to verify the whole set.
 - For tar and zip split archives, you should reassemble all parts and then verify the combined archive as shown above.
 
-## Hashing and Integrity Verification
+#### Limitations and Caveats
+
+- Verification (`--verify`) is skipped for split archives. You must reassemble all parts before verifying integrity.
+- If any required tool is missing (`split`, `7z`, or `zip`), the script will print an actionable error message.
+- If the split operation fails, all split parts are cleaned up to avoid confusion.
+- If any part is missing or empty, a warning is printed.
+- For 7z, verification can be performed on the first part (`7z t split.7z.001`).
+- Currently, splitting is performed before encryption. Splitting after encryption is not yet supported for all formats.
+- Every time an archive is split, a `<output>.parts.txt` file is created listing all split parts and their sizes (in bytes). This helps with verification and reassembly.
+- If --hash is used with split archives, a `<output>.parts.sha256` file is created with SHA256 hashes for each part. A warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
+
+### Manifest Generation
+
+You can generate a manifest file after archiving using the --manifest option:
+
+```
+fancy-tar myfolder/ -o archive.tar.gz --manifest tree
+fancy-tar myfolder/ -o archive.tar.gz --manifest text
+fancy-tar myfolder/ -o archive.tar.gz --manifest csv
+fancy-tar myfolder/ -o archive.tar.gz --manifest csvhash
+```
+
+#### Manifest Types
+- **tree**: Hierarchical tree view of files in the archive.
+- **text**: Flat list of all files in the archive.
+- **csv**: CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp.
+- **csvhash**: Like csv, but also includes a SHA256 hash per file (computed by extracting each file to a temp dir and hashing it).
+
+#### Sample Output
+**CSV:**
+```
+Path,Compressed Size,Uncompressed Size,Compression Ratio,File Type,Depth,Attributes,Timestamp
+file1.txt,N/A,1024,N/A,file,0,-rw-r--r--,2024-06-10 12:34
+subdir/file2.txt,N/A,2048,N/A,file,1,-rw-r--r--,2024-06-10 12:34
+```
+**CSVHASH:**
+```
+Path,Compressed Size,Uncompressed Size,Compression Ratio,File Type,Depth,Attributes,Timestamp,SHA256
+file1.txt,N/A,1024,N/A,file,0,-rw-r--r--,2024-06-10 12:34,abcdef123456...
+subdir/file2.txt,N/A,2048,N/A,file,1,-rw-r--r--,2024-06-10 12:34,123456abcdef...
+```
+
+### Hashing and Integrity Verification
 
 When using the `--hash` option, fancy-tar generates a SHA256 hash file (e.g., `archive.7z.sha256`) **after all other steps, including encryption**. This means the hash is for the final archive file, which may be encrypted if you used `--encrypt`.
 
@@ -415,7 +573,7 @@ When using the `--hash` option, fancy-tar generates a SHA256 hash file (e.g., `a
 - The `.sha256` file always matches the final output file (post-encryption, if used).
 - This ensures users can verify the file they actually have, which is the most secure and expected workflow for distribution.
 
-## Archive Naming Logic
+### Archive Naming Logic
 
 - If you archive a single file or directory and do not specify `-o`/`--output`, the archive will be named after that file or directory (e.g., `database.sql` → `database.tar.gz`, `myfolder/` → `myfolder.tar.gz`).
 - For files, the extension is stripped (e.g., `my.data.db` → `my.data.tar.gz`).
@@ -424,25 +582,94 @@ When using the `--hash` option, fancy-tar generates a SHA256 hash file (e.g., `a
 - If you archive multiple files or directories, or specify `-o`, the archive will be named as specified or default to `archive.tar.gz` (or the appropriate extension for the chosen format).
 - An info message is printed when the archive name is auto-generated this way.
 
-## Progress Display Improvements
+### Progress Display Improvements
 
 - The progress display for archive creation now robustly handles and formats file sizes, preventing errors related to invalid numbers.
 
-## 🤝 Contributing
+### Platform Support for Folder Opening
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- The `-x`/`--open-after` option opens the folder containing the output archive after creation.
+- On **macOS**: uses the `open` command.
+- On **Linux**: uses the `xdg-open` command.
+- On other platforms, this feature may not be available.
 
-## 📝 License
+## 🍎 Platform-specific Features
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### macOS Drag-and-Drop Quick Action (Automator)
 
-## 🙏 Acknowledgments
+**Quick Actions** are small workflows you can add to Finder on macOS, allowing you to perform custom tasks (like archiving, renaming, or running scripts) directly from the right-click menu or via drag-and-drop. They make it easy to extend Finder with your own tools, without needing to open a terminal.
 
-- Inspired by the need for better progress reporting in tar operations
-- Built with modern shell scripting best practices
-- Thanks to all contributors and users!
+You can use a pre-made Automator Quick Action to archive files or folders with FancyTar directly from Finder.
 
-## Test Scripts
+#### Installation
+1. Download the `Archive with FancyTar.workflow` file from this repository (or create it using the instructions below).
+2. Double-click the file to install, or move it to `~/Library/Services/`.
+3. Make sure `fancytar` is installed and available at `/usr/local/bin/fancytar` (or edit the workflow to match your install location).
+
+#### Usage
+- In Finder, select files or folders.
+- Right-click and choose `Quick Actions > Archive with FancyTar`.
+- An archive named `Archive-YYYYMMDD-HHMMSS.tar.gz` will be created in the same folder as the first selected file.
+
+#### Customization
+- You can edit the workflow in Automator to change the archive name, format, or options.
+
+#### Shell Script Used in the Workflow
+```bash
+#!/bin/bash
+DIR="$(dirname "$1")"
+ARCHIVE_NAME="Archive-$(date +%Y%m%d-%H%M%S).tar.gz"
+/usr/local/bin/fancytar create "$DIR/$ARCHIVE_NAME" "$@"
+```
+
+### Creating Your Own Custom Finder Quick Actions (Automator)
+
+If you want to create your own custom archiving actions (or run any script) from Finder, you can do so using Automator. Here's how:
+
+#### Step-by-Step: Create a Custom Quick Action
+
+1. **Open Automator**
+   - Find Automator in `/Applications` and launch it.
+
+2. **Create a New Quick Action**
+   - Select "New Document."
+   - Choose "Quick Action" (or "Service" on older macOS versions).
+
+3. **Configure Workflow Settings**
+   - At the top, set:
+     - "Workflow receives current" to `files or folders`
+     - "in" to `Finder`
+
+4. **Add a "Run Shell Script" Action**
+   - In the left pane, search for "Run Shell Script" and drag it to the workflow area.
+   - Set "Pass input" to `as arguments`.
+
+5. **Write Your Custom Script**
+   - Enter any shell script you want. For example, to create a zip archive:
+     ```bash
+     #!/bin/bash
+     DIR="$(dirname "$1")"
+     ARCHIVE_NAME="MyCustomArchive-$(date +%Y%m%d-%H%M%S).zip"
+     /usr/bin/zip -r "$DIR/$ARCHIVE_NAME" "$@"
+     ```
+   - Or, to use a different tool or options, modify the script as needed.
+
+6. **Save the Quick Action**
+   - Save with a descriptive name, e.g., "Custom Archive Action".
+
+7. **Use Your Action**
+   - In Finder, select files/folders, right-click, and choose your action from the "Quick Actions" or "Services" menu.
+
+#### Tips
+- You can create multiple Quick Actions for different formats or tools.
+- Edit the workflow in Automator at any time to change the script or options.
+- You can also assign keyboard shortcuts to your Quick Actions in System Preferences > Keyboard > Shortcuts > Services.
+
+This approach lets you tailor archiving or any file-processing workflow to your exact needs, all accessible from Finder!
+
+## 🧪 Development & Testing
+
+### Test Scripts
 
 The project includes several test scripts to ensure functionality and reliability:
 
@@ -479,180 +706,17 @@ chmod +x tests/*.sh
 ./tests/test_man.sh
 ```
 
-### Platform Support for Folder Opening
+### Contributing
 
-- The `-x`/`--open-after` option opens the folder containing the output archive after creation.
-- On **macOS**: uses the `open` command.
-- On **Linux**: uses the `xdg-open` command.
-- On other platforms, this feature may not be available.
+Contributions are welcome! Please feel free to submit a Pull Request or let me know what you'd like me to implement.
 
-## 📦 Split Archives
+## 📝 License
 
-fancy-tar supports splitting large archives into multiple parts using the `--split-size` option. This is useful for distributing large files, uploading to services with file size limits, or storing on media with limited capacity.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### How to Use
+## 🙏 Acknowledgments
 
-Add the `--split-size=<size>` option to your command. For example:
-
-```bash
-fancy-tar huge_folder/ --split-size=100M -o split.tar.gz
-```
-
-- The archive will be split into parts of the specified size (e.g., 100M, 1G).
-- Supported for tar, zip, and 7z formats.
-- You can specify the output file name with `-o` or `--output`.
-- Use the `--force` flag to automatically overwrite any existing output file or split parts without prompting.
-
-### Output and Naming
-
-- The script prints a summary of all split parts created, including their sizes.
-- A `<output>.parts.txt` file is created listing all split parts and their sizes (in bytes).
-- If split parts matching the output name already exist, you will be prompted to overwrite, rename, or cancel.
-- You can specify a custom prefix for split parts by choosing the output file name.
-- Naming conventions:
-  - For tar: `split.tar.gz`, `split.tar.gz.ab`, `split.tar.gz.ac`, ...
-  - For 7z: `split.7z.001`, `split.7z.002`, ...
-  - For zip: `split.zip`, `split.z01`, `split.z02`, ...
-
-### How to Reassemble and Extract
-
-After splitting, the script prints clear instructions for reassembling and extracting your archive:
-
-- **For tar-based archives:**
-  ```bash
-  cat split.tar.gz* > combined.tar.gz
-  gzip -t combined.tar.gz   # or   tar -tf combined.tar.gz
-  # Then extract as usual:
-  tar -xzf combined.tar.gz
-  ```
-- **For 7z archives:**
-  ```bash
-  7z x split.7z.001
-  # (Make sure all .7z.0* parts are present in the same directory)
-  ```
-- **For zip archives:**
-  ```bash
-  zip -F split.zip --out combined.zip
-  unzip combined.zip
-  ```
-
-### Verification
-
-- For 7z split archives, if you use the `--verify` flag, fancy-tar will automatically run `7z t` on the first part after creation to verify the whole set.
-- For tar and zip split archives, you should reassemble all parts and then verify the combined archive as shown above.
-
-### Limitations and Caveats
-
-- Verification (`--verify`) is skipped for split archives. You must reassemble all parts before verifying integrity.
-- If any required tool is missing (`split`, `7z`, or `zip`), the script will print an actionable error message.
-- If the split operation fails, all split parts are cleaned up to avoid confusion.
-- If any part is missing or empty, a warning is printed.
-- For 7z, verification can be performed on the first part (`7z t split.7z.001`).
-- Currently, splitting is performed before encryption. Splitting after encryption is not yet supported for all formats.
-- Every time an archive is split, a `<output>.parts.txt` file is created listing all split parts and their sizes (in bytes). This helps with verification and reassembly.
-
-- If --hash is used with split archives, a `<output>.parts.sha256` file is created with SHA256 hashes for each part. A warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
-
-## macOS Drag-and-Drop Quick Action (Automator)
-
-**Quick Actions** are small workflows you can add to Finder on macOS, allowing you to perform custom tasks (like archiving, renaming, or running scripts) directly from the right-click menu or via drag-and-drop. They make it easy to extend Finder with your own tools, without needing to open a terminal.
-
-You can use a pre-made Automator Quick Action to archive files or folders with FancyTar directly from Finder.
-
-### Installation
-1. Download the `Archive with FancyTar.workflow` file from this repository (or create it using the instructions below).
-2. Double-click the file to install, or move it to `~/Library/Services/`.
-3. Make sure `fancytar` is installed and available at `/usr/local/bin/fancytar` (or edit the workflow to match your install location).
-
-### Usage
-- In Finder, select files or folders.
-- Right-click and choose `Quick Actions > Archive with FancyTar`.
-- An archive named `Archive-YYYYMMDD-HHMMSS.tar.gz` will be created in the same folder as the first selected file.
-
-### Customization
-- You can edit the workflow in Automator to change the archive name, format, or options.
-
-### Shell Script Used in the Workflow
-```bash
-#!/bin/bash
-DIR="$(dirname "$1")"
-ARCHIVE_NAME="Archive-$(date +%Y%m%d-%H%M%S).tar.gz"
-/usr/local/bin/fancytar create "$DIR/$ARCHIVE_NAME" "$@"
-```
-
-## Creating Your Own Custom Finder Quick Actions (Automator)
-
-If you want to create your own custom archiving actions (or run any script) from Finder, you can do so using Automator. Here's how:
-
-### Step-by-Step: Create a Custom Quick Action
-
-1. **Open Automator**
-   - Find Automator in `/Applications` and launch it.
-
-2. **Create a New Quick Action**
-   - Select "New Document."
-   - Choose "Quick Action" (or "Service" on older macOS versions).
-
-3. **Configure Workflow Settings**
-   - At the top, set:
-     - "Workflow receives current" to `files or folders`
-     - "in" to `Finder`
-
-4. **Add a "Run Shell Script" Action**
-   - In the left pane, search for "Run Shell Script" and drag it to the workflow area.
-   - Set "Pass input" to `as arguments`.
-
-5. **Write Your Custom Script**
-   - Enter any shell script you want. For example, to create a zip archive:
-     ```bash
-     #!/bin/bash
-     DIR="$(dirname "$1")"
-     ARCHIVE_NAME="MyCustomArchive-$(date +%Y%m%d-%H%M%S).zip"
-     /usr/bin/zip -r "$DIR/$ARCHIVE_NAME" "$@"
-     ```
-   - Or, to use a different tool or options, modify the script as needed.
-
-6. **Save the Quick Action**
-   - Save with a descriptive name, e.g., "Custom Archive Action".
-
-7. **Use Your Action**
-   - In Finder, select files/folders, right-click, and choose your action from the "Quick Actions" or "Services" menu.
-
-### Tips
-- You can create multiple Quick Actions for different formats or tools.
-- Edit the workflow in Automator at any time to change the script or options.
-- You can also assign keyboard shortcuts to your Quick Actions in System Preferences > Keyboard > Shortcuts > Services.
-
-This approach lets you tailor archiving or any file-processing workflow to your exact needs, all accessible from Finder!
-
-## Manifest Generation
-
-You can generate a manifest file after archiving using the --manifest option:
-
-```
-fancy-tar myfolder/ -o archive.tar.gz --manifest tree
-fancy-tar myfolder/ -o archive.tar.gz --manifest text
-fancy-tar myfolder/ -o archive.tar.gz --manifest csv
-fancy-tar myfolder/ -o archive.tar.gz --manifest csvhash
-```
-
-### Manifest Types
-- **tree**: Hierarchical tree view of files in the archive.
-- **text**: Flat list of all files in the archive.
-- **csv**: CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp.
-- **csvhash**: Like csv, but also includes a SHA256 hash per file (computed by extracting each file to a temp dir and hashing it).
-
-### Sample Output
-**CSV:**
-```
-Path,Compressed Size,Uncompressed Size,Compression Ratio,File Type,Depth,Attributes,Timestamp
-file1.txt,N/A,1024,N/A,file,0,-rw-r--r--,2024-06-10 12:34
-subdir/file2.txt,N/A,2048,N/A,file,1,-rw-r--r--,2024-06-10 12:34
-```
-**CSVHASH:**
-```
-Path,Compressed Size,Uncompressed Size,Compression Ratio,File Type,Depth,Attributes,Timestamp,SHA256
-file1.txt,N/A,1024,N/A,file,0,-rw-r--r--,2024-06-10 12:34,abcdef123456...
-subdir/file2.txt,N/A,2048,N/A,file,1,-rw-r--r--,2024-06-10 12:34,123456abcdef...
-```
+- Inspired by the need for better progress reporting in tar operations
+- Built with modern shell scripting best practices
+- Thanks to all contributors and users!
 

@@ -1,4 +1,4 @@
-.TH FANCY-TAR 1 "2024-04-30" "1.8.0" "1.8.0"
+.TH FANCY-TAR 1 "2024-12-19" "1.8.3" "1.8.3"
 .SH NAME
 fancy-tar, fancytar, ftar \- A modern, feature-rich tar wrapper with progress bars and encryption
 .SH SYNOPSIS
@@ -44,6 +44,11 @@ Uses OpenSSL for encryption. Output files will have a .enc extension.
 .TP
 .B 7z
 Uses built-in AES-256 encryption when a password is provided.
+.TP
+.B ZIP
+Supports two encryption methods:
+  • Native password protection (--password): Built into the zip file
+  • GPG encryption (--encrypt): Creates zip, then encrypts with GPG (.zip.gpg)
 .SH OPTIONS
 .TP
 .B \-o, \-\-output <file>
@@ -68,13 +73,19 @@ Do not include directory contents (shallow archive)
 Output SHA256 hash file alongside the archive
 .TP
 .B \-\-encrypt[=method]
-Encrypt archive with gpg (default) or openssl
+Encrypt archive. Behavior varies by format:
+  • tar/tar.gz: Use gpg (default) or openssl
+  • 7z: Use built-in AES-256 encryption (same as --password)
+  • zip: Create zip, then encrypt with GPG (.zip.gpg)
 .TP
 .B \-\-recipient <id>
 Recipient ID for GPG public key encryption
 .TP
 .B \-\-password <pass>
-Password to use for encryption (if supported)
+Password for encryption. Behavior varies by format:
+  • tar/tar.gz: Used with --encrypt=gpg or --encrypt=openssl
+  • 7z: Uses built-in AES-256 encryption
+  • zip: Uses native password protection (built into zip file)
 .TP
 .B \-\-verify
 Verify the archive after creation
@@ -106,6 +117,21 @@ Generate a manifest file listing the contents of the archive in the specified fo
   text     - Flat list of all files in the archive
   csv      - CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp
   csvhash  - Like csv, but also includes a SHA256 hash per file (computed by extracting each file to a temp dir and hashing it)
+.TP
+.B \-\-exclude <pattern>
+Exclude files matching the given pattern (can be used multiple times)
+.TP
+.B \-\-include <pattern>
+Include only files matching the given pattern (can be used multiple times)
+.TP
+.B \-\-files-from <file>
+Read list of files to include from a file (one per line; supports glob patterns)
+.TP
+.B \-\-verbose
+Show each file being processed with file count display [001/234]. When not used, only the progress bar is shown (default behavior).
+.TP
+.B \-\-debug
+Enable debug output and show all commands being executed (compression, encryption, splitting, verification, etc.)
 .SH PROGRESS REPORTING
 The tool shows detailed progress information including:
 .IP \(bu 2
@@ -126,6 +152,20 @@ Create and verify a split archive:
 .B
 fancy-tar 1.8.0folder --split-size=100M --verify -o archive.tar.gz
 .TP
+Exclude all .log and .tmp files:
+.B
+fancy-tar project/ --exclude="*.log" --exclude="*.tmp" -o project.tar.gz
+.TP
+Include only .txt and .md files:
+.B
+fancy-tar docs/ --include="*.txt" --include="*.md" -o docs.tar.gz
+.TP
+Use a file list (one file or pattern per line):
+.B
+echo -e "src/*.c\nsrc/*.h\nREADME.md" > filelist.txt
+.br
+fancy-tar --files-from filelist.txt -o sources.tar.gz
+.TP
 Create a 7z archive with high compression:
 .B
 fancy-tar 1.8.0folder --7z --compression=9 -o archive.7z
@@ -138,11 +178,23 @@ Encrypt with OpenSSL:
 .B
 fancy-tar 1.8.0folder --encrypt=openssl --password secret
 .TP
-ZIP archive with password:
+ZIP archive with native password protection:
 .B
 fancy-tar 1.8.0folder --zip --password secret
+.TP
+ZIP archive with GPG encryption (creates .zip.gpg):
+.B
+fancy-tar 1.8.0folder --zip --encrypt
+.TP
+Exclude files from zip archive:
+.B
+fancy-tar project/ --exclude="*.log" --exclude="*.tmp" --zip -o project.zip
+.TP
+Include only specific files in 7z archive:
+.B
+fancy-tar docs/ --include="*.txt" --include="*.md" --7z -o docs.7z
 .SH VERSION
-fancy-tar 1.8.0
+fancy-tar 1.8.3
 .SH SEE ALSO
 .BR tar (1),
 .BR gzip (1),

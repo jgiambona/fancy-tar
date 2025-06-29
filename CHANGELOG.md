@@ -1,5 +1,73 @@
 # Changelog
 
+## [Unreleased]
+
+
+## [1.8.3] - 2025-07-01
+
+### Added
+- **--verbose option**: New option to show each file being processed with file count display [001/234]. When not used, only the progress bar is shown (default behavior).
+- **File count display**: Shows current file number and total files when --verbose is enabled, making it easier to track progress for large archives.
+
+### Fixed
+- **Tar command construction**: Fixed "Cannot stat" errors by replacing string-based command construction with proper array-based arguments. This prevents issues with file paths containing spaces and special characters.
+- **File path handling**: Improved file path resolution to use `realpath` when available, with a robust fallback for systems without it. This prevents malformed absolute paths that could cause tar to fail.
+- **Command execution**: Replaced `eval` usage with direct command execution using arrays, improving security and reliability when handling complex file paths.
+- **Path handling in archives**: Fixed issue where archiving directories would include the full absolute path structure (e.g., `/Users/me/Downloads/somedirectory/sub1`) instead of just the relative path from the current directory. Now uses tar's `-C` option to ensure only relative paths are preserved in the archive.
+
+## [1.8.2] - 2025-06-29
+
+### Fixed
+- **Default filename generation**: Fixed issue where archiving the current directory (`.`) would result in an invalid filename like `..tar.gz`. Now properly uses the current directory name as the base filename.
+- **Tar command construction**: Fixed "Cannot stat" errors when processing files with spaces and special characters in their names. Simplified tar command construction to use tar's native file handling instead of complex `-C` directory changes.
+- **File path handling**: Improved handling of file paths with spaces, parentheses, and other special characters to prevent tar command failures.
+
+## [1.8.1] - 2025-06-28
+
+### Added
+- **Multiple easy installation options for less tech-savvy users:**
+  - One-liner curl installer: `curl -fsSL https://raw.githubusercontent.com/jgiambona/fancy-tar/main/install-curl.sh | bash`
+  - macOS-specific installer with multiple options (Homebrew, user directory, Applications folder, standalone bundle)
+  - Interactive installer with dependency detection and automatic installation
+  - Quick installer for minimal user interaction
+  - All installers preserve existing installation methods and don't break current functionality
+  - **macOS installers work without requiring Xcode or Homebrew installation** - they use system tools or provide clear alternatives
+- File selection options for all archive types (tar, zip, 7z) with unified pattern syntax:
+  - `--exclude <pattern>`: Exclude files matching the given pattern (can be used multiple times)
+  - `--include <pattern>`: Include only files matching the given pattern (can be used multiple times)
+  - `--files-from <file>`: Read list of files to include from a file (one per line; supports glob patterns; blank lines and lines starting with # are ignored)
+- All file selection is now handled by the script using consistent shell glob patterns, ensuring the same syntax works across all archive formats.
+- Enhanced `--debug` option: now shows all commands being executed (compression, encryption, splitting, verification, etc.) for educational and debugging purposes.
+
+### Changed
+- Updated FUTURE.md to eliminate many considered features that are low value to users and add unnecessary complexity.
+- **Documentation improvements**: Clarified the different behaviors between `--password` and `--encrypt` options for different archive types:
+  - ZIP: `--password` uses native zip password protection, `--encrypt` creates zip then encrypts with GPG
+  - 7z: Both `--password` and `--encrypt` use 7z's built-in AES-256 encryption
+  - tar/tar.gz: `--encrypt` specifies GPG or OpenSSL method, `--password` provides the password
+- Added comprehensive examples and explanations for all encryption scenarios in README and man page.
+- **Installation documentation**: Reorganized installation section with clear options for different user skill levels, added installation options summary table, and highlighted the easiest methods for beginners.
+
+### Fixed
+- **Shell syntax error**: Fixed eval command failure when processing filenames containing special characters like parentheses `()`. The tar command construction now properly quotes file paths to handle any filename safely.
+
+## [1.8.0] - 2024-06-11
+
+### Added
+- `--force` flag for split archives: Automatically overwrite all existing split parts without prompting when using `--split-size`. Useful for scripting or automation.
+- For 7z split archives, if `--verify` is set, fancy-tar now automatically runs `7z t` on the first part after creation to verify the whole set.
+- Every time an archive is split, a <output>.parts.txt file is created listing all split parts and their sizes (in bytes).
+- When --hash is used with split archives, a <output>.parts.sha256 file is created with SHA256 hashes for each part, and a warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
+- Manifest improvements: Add `--manifest csvhash`, add file type and depth to CSV, use streaming hash with sha256sum/shasum/openssl, update docs and completions for all manifest formats, optimize for portability and security.
+- Added and documented macOS Quick Actions (Automator workflows) for drag-and-drop archiving and custom user actions.
+- Debian changelog version matches v1.8.0 tag.
+
+### Fixed
+- Progress display: Fixed 'invalid number' errors in archive size formatting during progress display. The size formatting is now robust for all file and directory inputs.
+
+### Changed
+- Changed `--print-filename` behavior: for split archives, it now outputs all split part filenames (one per line) to stdout, making scripting easier and more robust. For non-split archives, it still outputs the single filename.
+
 ## [1.7.3] - 2024-04-30
 
 ### Added
@@ -33,124 +101,4 @@
 - Fixed compression tool selection logic
 
 ### Fixed
-- Fixed `--recipient` option for GPG public key encryption
-- Fixed split archive naming conventions
-- Fixed compression handling in split archives
-- Fixed documentation inconsistencies
-
-## [1.7.0] - 2024-03-26
-
-### Changed
-- Modified compression behavior to respect explicit compression method choices
-  - When a compression method is explicitly specified (e.g., gzip, bzip2, xz), the tool will use that exact method without attempting to use parallel versions
-  - This allows for consistent behavior when specific compression tools are required
-- Updated documentation to clarify compression behavior
-- Removed implemented features from future features list
-- Changed version management to source from VERSION file
-
-### Fixed
-- Fixed Debian package installation paths
-- Fixed RPM package build process
-- Fixed man page formatting and content
-
-## [1.6.6] - 2024-03-25
-### Added
-- Added support for parallel compression tools (pigz, pbzip2, pxz)
-- Added automatic detection and use of parallel compression tools
-- Added progress reporting for parallel compression
-- Added documentation for parallel compression support
-
-### Changed
-- Improved compression performance by utilizing multiple CPU cores
-- Updated man page to document parallel compression support
-- Updated README with parallel compression information
-
-## [1.6.5] - 2024-03-24
-### Added
-- Added support for split archives
-- Added archive verification
-- Added SHA256 hash generation
-- Added tree view for file hierarchy
-
-### Changed
-- Improved error handling
-- Updated documentation
-- Fixed various bugs
-
-## [1.6.4] - 2024-03-23
-### Added
-- Added support for 7z archives
-- Added support for OpenSSL encryption
-- Added support for GPG encryption
-- Added support for ZIP archives
-
-### Changed
-- Improved security features
-- Updated documentation
-- Fixed various bugs
-
-## [1.6.3] - 2024-03-22
-### Added
-- Added support for progress bars
-- Added support for desktop notifications
-- Added support for folder opening
-- Added support for automatic cleanup
-
-### Changed
-- Improved user experience
-- Updated documentation
-- Fixed various bugs
-
-## [1.6.2] - 2024-03-21
-### Added
-- Added support for man pages
-- Added support for shell completions
-- Added support for version checking
-- Added support for self-testing
-
-### Changed
-- Improved installation process
-- Updated documentation
-- Fixed various bugs
-
-## [1.6.1] - 2024-03-20
-### Added
-- Added support for Homebrew
-- Added support for Debian packages
-- Added support for RPM packages
-- Added support for manual installation
-
-### Changed
-- Improved packaging
-- Updated documentation
-- Fixed various bugs
-
-## [1.6.0] - 2024-03-19
-### Added
-- Initial release
-- Basic tar functionality
-- Basic compression support
-- Basic encryption support
-
-### Changed
-- Improved error handling
-- Updated documentation
-- Fixed various bugs
-
-## [1.4.8] - 2025-03-30
-- ✅ Fully rebuilt from verified v1.3.13 base
-- ✅ All features restored (zip, encryption, hashing, trees, etc.)
-- ✅ `--version`, `--self-test` re-enabled
-- ✅ Permission, password, and error handling fixed
-- ✅ Desktop notification and `-x` folder opening
-
-## [Unreleased]
-### Added
-- `--force` flag for split archives: Automatically overwrite all existing split parts without prompting when using `--split-size`. Useful for scripting or automation.
-- For 7z split archives, if `--verify` is set, fancy-tar now automatically runs `7z t` on the first part after creation to verify the whole set.
-- Improved documentation and completions for split archive features, including reassembly instructions and the new `--force` flag.
-- Every time an archive is split, a <output>.parts.txt file is created listing all split parts and their sizes (in bytes).
-- When --hash is used with split archives, a <output>.parts.sha256 file is created with SHA256 hashes for each part, and a warning is printed that these are for individual parts, not the reassembled archive. To verify the full archive, reassemble all parts and hash the combined file.
-
-### Fixed
-- Progress display: Fixed 'invalid number' errors in archive size formatting during progress display. The size formatting is now robust for all file and directory inputs.
+- Fixed `--recipient`

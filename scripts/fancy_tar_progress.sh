@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.8.0"
+VERSION="1.8.3"
 
 # Pre-scan for --debug flag to enable debug output as early as possible
 for arg in "$@"; do
@@ -9,11 +9,86 @@ for arg in "$@"; do
     fi
 done
 
+# Help function - must be defined before argument parsing
+show_help() {
+  echo "Usage: fancy-tar [options] <files...>"
+  echo ""
+  echo "Options:"
+  echo "  -o, --output <file>    Specify output file name"
+  echo "  -n                     Do not use gzip compression"
+  echo "  -s                     Use slower but better compression"
+  echo "  -x                     Open the output folder when done"
+  echo "  -t, --tree            Show hierarchical file structure before archiving"
+  echo "  --no-recursion|--no-recurse Do not include directory contents (shallow archive)"
+  echo "  --no-prompt           Skip all interactive prompts (use defaults)"
+  echo "  --hash                Output SHA256 hash file alongside the archive"
+  echo "  --encrypt[=method]    Encrypt archive with gpg (default) or openssl"
+  echo "  --recipient <id>      Recipient ID for GPG public key encryption"
+  echo "  --password <pass>     Password to use for encryption (if supported)"
+  echo "  --verify              Verify the archive after creation"
+  echo "  --split-size=<size>   Split the archive into smaller parts (e.g., 100M, 1G)"
+  echo "  --zip                 Create a .zip archive (with optional password)"
+  echo "  --7z                  Create a .7z archive (with optional password)"
+  echo "                       • Uses AES-256 encryption when password is provided"
+  echo "                       • Encrypts both file contents and headers"
+  echo "                       • Supports solid compression"
+  echo "  --compression=<0-9>   Set 7z compression level (0=store, 9=ultra)"
+  echo "                       • 0: Store (no compression)"
+  echo "                       • 1: Fastest"
+  echo "                       • 5: Normal (default)"
+  echo "                       • 9: Ultra (very slow)"
+  echo "  --use=<tool>          Force specific compression tool:"
+  echo "                       • gzip/pigz: Use gzip or parallel gzip"
+  echo "                       • bzip2/pbzip2/lbzip2: Use bzip2 or parallel variants"
+  echo "                       • xz/pxz: Use xz or parallel xz"
+  echo "                       • If not specified, automatically uses parallel tools when available"
+  echo "  --manifest <format>   Generate a manifest file listing the contents of the archive. Formats:"
+  echo "                       • tree: Hierarchical tree view (.txt)"
+  echo "                       • text: Flat list of all files (.txt)"
+  echo "                       • csv: CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp (.csv)"
+  echo "                       • csvhash: Like csv, but also includes a SHA256 hash per file (.csv)"
+  echo "  --exclude <pattern>   Exclude files matching the pattern (can be used multiple times)"
+  echo "  --include <pattern>   Include only files matching the pattern (can be used multiple times)"
+  echo "  --files-from <file>   Read list of files to include from the specified file"
+  echo "  --verbose             Show each file being processed with file count [001/234]"
+  echo "  -f, --force           Automatically overwrite any existing output file or split parts without prompting"
+  echo "  -h, --help            Show this help message"
+  echo "  --version             Show version information"
+  echo ""
+  echo "Examples:"
+  echo "  fancy-tar file1.txt file2.txt -o archive.tar.gz"
+  echo "  fancy-tar --zip --password secret -o archive.zip folder/"
+  echo "  fancy-tar --7z --compression=9 -o archive.7z large_folder/"
+  echo "  fancy-tar --split-size=100M -o archive.tar.gz huge_folder/"
+  echo "  fancy-tar --verify -o archive.tar.gz important_files/"
+  echo "  fancy-tar --use=gzip -o archive.tar.gz files/"  # Force gzip instead of pigz"
+  echo "  fancy-tar --manifest csvhash -o archive.tar.gz files/"  # Generate CSV with SHA256 hashes"
+  echo ""
+  echo "Note: When using --split-size, the archive will be split into multiple parts"
+  echo "      with the specified size. For example, with --split-size=100M, a 500MB"
+  echo "      archive would be split into 5 parts of 100MB each."
+  exit 0
+}
+
 # Debug logging function
 # Usage: debug_log "message"
 debug_log() {
     if [ -n "$DEBUG" ]; then
         echo "DEBUG: $*" | tee -a /tmp/fancy_tar_debug.log
+    fi
+}
+
+# Function to show commands being executed
+# Usage: show_command "description" "command" [args...]
+show_command() {
+    local description="$1"
+    shift
+    local cmd=("$@")
+    
+    if [ -n "$DEBUG" ]; then
+        echo "🔧 $description:"
+        echo "   ${cmd[*]}"
+        echo
     fi
 }
 
@@ -160,10 +235,12 @@ create_split_archive() {
 
     local split_success=false
     if [[ "$output" == *.zip ]]; then
+        show_command "Creating split ZIP archive" zip -s "$split_size" "$output" "${input_files[@]}"
         if zip -s "$split_size" "$output" "${input_files[@]}"; then
             split_success=true
         fi
     elif [[ "$output" == *.7z ]]; then
+        show_command "Creating split 7z archive" 7z a -v"$split_size" "$output" "${input_files[@]}"
         if 7z a -v"$split_size" "$output" "${input_files[@]}"; then
             split_success=true
         fi
@@ -177,10 +254,12 @@ create_split_archive() {
             compression_cmd="xz -c"
         fi
         if [ -n "$compression_cmd" ]; then
+            show_command "Creating split tar archive with compression" tar -cf - "${input_files[@]}" "|" $compression_cmd "|" split -b "$split_size" - "$output."
             if tar -cf - "${input_files[@]}" | $compression_cmd | split -b "$split_size" - "$output."; then
                 split_success=true
             fi
         else
+            show_command "Creating split tar archive without compression" tar -cf - "${input_files[@]}" "|" split -b "$split_size" - "$output."
             if tar -cf - "${input_files[@]}" | split -b "$split_size" - "$output."; then
                 split_success=true
             fi
@@ -554,6 +633,14 @@ write_manifest() {
     rm -rf "$tempdir"
 }
 
+# Add variable for print-filename flag
+declare print_filename=false
+
+# File selection variables
+exclude_patterns=()
+include_patterns=()
+files_from=""
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -663,6 +750,50 @@ while [[ $# -gt 0 ]]; do
             manifest_format="$2"
             shift 2
             ;;
+        --print-filename)
+            print_filename=true
+            shift
+            ;;
+        --verbose)
+            verbose=true
+            shift
+            ;;
+        --exclude)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --exclude requires a pattern"
+                exit 1
+            fi
+            exclude_patterns+=("$2")
+            shift 2
+            ;;
+        --exclude=*)
+            exclude_patterns+=("${1#*=}")
+            shift
+            ;;
+        --include)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --include requires a pattern"
+                exit 1
+            fi
+            include_patterns+=("$2")
+            shift 2
+            ;;
+        --include=*)
+            include_patterns+=("${1#*=}")
+            shift
+            ;;
+        --files-from)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --files-from requires a file path"
+                exit 1
+            fi
+            files_from="$2"
+            shift 2
+            ;;
+        --files-from=*)
+            files_from="${1#*=}"
+            shift
+            ;;
         -*)
             echo "Error: Unknown option $1"
             exit 1
@@ -723,6 +854,10 @@ if [ -z "$output" ]; then
         if [ -d "$input_name" ]; then
             # Directory: use full directory name (even if it contains dots)
             base_name="$(basename "$input_name")"
+            # Handle special case where basename returns "." (current directory)
+            if [ "$base_name" = "." ]; then
+                base_name="$(basename "$(pwd)")"
+            fi
         else
             # File or symlink
             file_base="$(basename "$input_name")"
@@ -846,26 +981,10 @@ human_readable_size() {
 # Function to calculate total size using ls for accuracy
 calculate_total_size() {
     local total=0
-    for file in "${input_files[@]}"; do
-        if [ -d "$file" ]; then
-            if [ "$no_recurse" = true ]; then
-                # Only count files in current directory
-                while IFS= read -r -d '' f; do
-                    size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
-                    total=$((total + size))
-                done < <(find "$file" -maxdepth 1 -type f -print0)
-            else
-                # Count all files recursively
-                while IFS= read -r -d '' f; do
-                    size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
-                    total=$((total + size))
-                done < <(find "$file" -type f -print0)
-            fi
-        else
-            # For single files, use ls
-            size=$(ls -l "$file" 2>/dev/null | awk '{print $5}')
-            total=$((total + size))
-        fi
+    for file in "${FILTERED_FILES[@]}"; do
+        # For filtered files, use ls directly since they're already individual files
+        size=$(ls -l "$file" 2>/dev/null | awk '{print $5}')
+        total=$((total + size))
     done
     
     # Debug output
@@ -978,80 +1097,228 @@ is_binary() {
     fi
 }
 
+# Function to filter files based on --exclude, --include, and --files-from patterns
+filter_files() {
+    local input_files=("$@")
+    local filtered_files=()
+    local temp_dir
+    temp_dir=$(mktemp -d)
+    
+    # Create a temporary file to store all candidate files
+    local all_files_list="$temp_dir/all_files.txt"
+    : > "$all_files_list"
+    
+    # Get current directory for path conversion
+    local current_dir=$(pwd)
+    
+    # Collect all files from input sources
+    for source in "${input_files[@]}"; do
+        # For path resolution, we need to handle both relative and absolute paths
+        # but preserve the original path structure for tar
+        local resolved_source=""
+        local original_source="$source"
+        
+        # Resolve the path for existence checks, but preserve original for tar
+        if command -v realpath >/dev/null 2>&1; then
+            resolved_source=$(realpath "$source")
+        else
+            # Fallback: resolve relative paths properly
+            if [[ "$source" == /* ]]; then
+                # Already absolute
+                resolved_source="$source"
+            else
+                # Convert to absolute for existence check
+                resolved_source="$(pwd)/$source"
+            fi
+        fi
+        
+        if [ -d "$resolved_source" ]; then
+            if [ "$no_recurse" = true ]; then
+                # Only files in current directory
+                find "$resolved_source" -maxdepth 1 -type f | while read -r file; do
+                    # Convert absolute path to relative path
+                    if [[ "$file" == "$current_dir"/* ]]; then
+                        echo "${file#$current_dir/}" >> "$all_files_list"
+                    else
+                        echo "$file" >> "$all_files_list"
+                    fi
+                done
+            else
+                # All files recursively
+                find "$resolved_source" -type f | while read -r file; do
+                    # Convert absolute path to relative path
+                    if [[ "$file" == "$current_dir"/* ]]; then
+                        echo "${file#$current_dir/}" >> "$all_files_list"
+                    else
+                        echo "$file" >> "$all_files_list"
+                    fi
+                done
+            fi
+        else
+            # Single file - use the original source path for tar
+            echo "$original_source" >> "$all_files_list"
+        fi
+    done
+    
+    # If --files-from is specified, use that instead of input files
+    if [ -n "$files_from" ]; then
+        if [ ! -f "$files_from" ]; then
+            echo "Error: File list '$files_from' does not exist"
+            rm -rf "$temp_dir"
+            return 1
+        fi
+        
+        # Create a new list from the files-from file
+        : > "$all_files_list"
+        while IFS= read -r line; do
+            # Skip blank lines and comments
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            
+            # Expand glob patterns if any
+            if [[ "$line" == *"*"* || "$line" == *"?"* ]]; then
+                # Handle glob patterns
+                for file in $line; do
+                    if [ -f "$file" ]; then
+                        # Use the original file path as provided
+                        echo "$file" >> "$all_files_list"
+                    fi
+                done
+            else
+                # Direct file path
+                if [ -f "$line" ]; then
+                    # Use the original file path as provided
+                    echo "$line" >> "$all_files_list"
+                fi
+            fi
+        done < "$files_from"
+    fi
+    
+    # Apply --exclude patterns
+    if [ ${#exclude_patterns[@]} -gt 0 ]; then
+        local exclude_list="$temp_dir/exclude_list.txt"
+        : > "$exclude_list"
+        
+        for pattern in "${exclude_patterns[@]}"; do
+            echo "$pattern" >> "$exclude_list"
+        done
+        
+        # Filter out excluded files
+        local temp_list="$temp_dir/temp_list.txt"
+        : > "$temp_list"
+        
+        while IFS= read -r file; do
+            local excluded=false
+            while IFS= read -r pattern; do
+                # Use glob matching for exclude
+                if [[ $(basename "$file") == $pattern ]]; then
+                    excluded=true
+                    break
+                fi
+            done < "$exclude_list"
+            if [ "$excluded" = false ]; then
+                echo "$file" >> "$temp_list"
+            fi
+        done < "$all_files_list"
+        
+        mv "$temp_list" "$all_files_list"
+    fi
+    
+    # Apply --include patterns (if specified, only include matching files)
+    if [ ${#include_patterns[@]} -gt 0 ]; then
+        local include_list="$temp_dir/include_list.txt"
+        : > "$include_list"
+        
+        for pattern in "${include_patterns[@]}"; do
+            echo "$pattern" >> "$include_list"
+        done
+        
+        # Filter to only included files
+        local temp_list="$temp_dir/temp_list.txt"
+        : > "$temp_list"
+        
+        while IFS= read -r file; do
+            local included=false
+            while IFS= read -r pattern; do
+                # Use glob matching for include
+                if [[ $(basename "$file") == $pattern ]]; then
+                    included=true
+                    break
+                fi
+            done < "$include_list"
+            if [ "$included" = true ]; then
+                echo "$file" >> "$temp_list"
+            fi
+        done < "$all_files_list"
+        
+        mv "$temp_list" "$all_files_list"
+    fi
+    
+    # Read filtered files into array
+    while IFS= read -r file; do
+        if [ -n "$file" ]; then
+            filtered_files+=("$file")
+        fi
+    done < "$all_files_list"
+    
+    # Clean up
+    rm -rf "$temp_dir"
+    
+    # Return filtered files via global variable
+    FILTERED_FILES=("${filtered_files[@]}")
+    
+    if [ -n "$DEBUG" ]; then
+        echo "Debug: Filtered files (${#filtered_files[@]}):"
+        for file in "${filtered_files[@]}"; do
+            echo "Debug:   - $file"
+        done
+    fi
+}
+
 # Function to create archive
 create_archive() {
     local output="$1"
     local compression="$2"
     local no_recurse="$3"
     shift 3  # Remove the first three arguments
-    local input_files=("$@")  # Remaining arguments are input files
+    local filtered_files=("$@")  # Remaining arguments are filtered files
     
     if [ -n "$DEBUG" ]; then
-        echo "Debug: create_archive received ${#input_files[@]} files:"
-        for file in "${input_files[@]}"; do
+        echo "Debug: create_archive received ${#filtered_files[@]} files:"
+        for file in "${filtered_files[@]}"; do
             echo "Debug:   - $file"
         done
     fi
     
     # Get total size for progress indicator
     local total_size=0
-    for source in "${input_files[@]}"; do
-        # Convert source to absolute path
-        local abs_source=$(cd "$(dirname "$source")" && pwd)/$(basename "$source")
-        
-        if [ -d "$abs_source" ]; then
-            if [ "$no_recurse" = true ]; then
-                # Only count files in current directory
-                while IFS= read -r -d '' f; do
-                    size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
-                    total_size=$((total_size + size))
-                done < <(find "$abs_source" -maxdepth 1 -type f -print0)
-            else
-                # Count all files recursively
-                while IFS= read -r -d '' f; do
-                    size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
-                    total_size=$((total_size + size))
-                done < <(find "$abs_source" -type f -print0)
-            fi
-        else
-            size=$(ls -l "$abs_source" 2>/dev/null | awk '{print $5}')
-            total_size=$((total_size + size))
-        fi
+    for file in "${filtered_files[@]}"; do
+        size=$(ls -l "$file" 2>/dev/null | awk '{print $5}')
+        total_size=$((total_size + size))
     done
     
     # Build the base tar command
-    local tar_cmd="tar -c"
-    
-    # Add all sources to tar command
-    for source in "${input_files[@]}"; do
-        local abs_source=$(cd "$(dirname "$source")" && pwd)/$(basename "$source")
-        local base_dir=$(dirname "$abs_source")
-        local file_name=$(basename "$abs_source")
+    local tar_args=("-c")
+    local file_counter=0
+    local total_files=${#filtered_files[@]}
+
+    # Add all filtered files to tar command
+    for file in "${filtered_files[@]}"; do
+        file_counter=$((file_counter + 1))
         
-        echo "Processing: $file_name ($(human_readable_size $(ls -l "$abs_source" 2>/dev/null | awk '{print $5}')))"
+        if [ "$verbose" = true ]; then
+            printf "[%03d/%03d] Processing: %s (%s)\n" "$file_counter" "$total_files" "$(basename "$file")" "$(human_readable_size $(ls -l "$file" 2>/dev/null | awk '{print $5}'))"
+        fi
         
         if [ -n "$DEBUG" ]; then
-            echo "Debug: Adding to tar command:"
-            echo "Debug:   base_dir: $base_dir"
-            echo "Debug:   file_name: $file_name"
+            echo "Debug: Adding to tar command: $file"
         fi
         
-        if [ -d "$abs_source" ]; then
-            if [ "$no_recurse" = true ]; then
-                # Only add files in current directory
-                tar_cmd="$tar_cmd -C $base_dir $file_name"
-            else
-                # Add all files recursively
-                tar_cmd="$tar_cmd -C $base_dir $file_name"
-            fi
-        else
-            # For single files, add them directly
-            tar_cmd="$tar_cmd -C $base_dir $file_name"
-        fi
+        # Add file to tar command array
+        tar_args+=("$file")
     done
     
     if [ -n "$DEBUG" ]; then
-        echo "Debug: Final tar command: $tar_cmd"
+        echo "Debug: Final tar command: tar ${tar_args[*]}"
     fi
     
     # Check for pv availability
@@ -1066,16 +1333,18 @@ create_archive() {
     if [ "$have_pv" = true ]; then
         # Use pv for progress monitoring
         if [ -n "$compression_tool" ]; then
+            show_command "Creating tar archive with compression and progress" "tar" "${tar_args[@]}" "|" pv -s "$total_size" "|" "$compression_tool" ">" "$output"
             if [ -n "$DEBUG" ]; then
-                echo "Debug: executing: $tar_cmd | pv -s $total_size | $compression_tool > $output" >&2
+                echo "Debug: executing: tar ${tar_args[*]} | pv -s $total_size | $compression_tool > $output" >&2
             fi
-            eval "$tar_cmd" | pv -s "$total_size" | "$compression_tool" > "$output" &
+            tar "${tar_args[@]}" | pv -s "$total_size" | "$compression_tool" > "$output" &
         else
             # No compression
+            show_command "Creating tar archive with progress" "tar" "${tar_args[@]}" "|" pv -s "$total_size" ">" "$output"
             if [ -n "$DEBUG" ]; then
-                echo "Debug: executing: $tar_cmd | pv -s $total_size > $output" >&2
+                echo "Debug: executing: tar ${tar_args[*]} | pv -s $total_size > $output" >&2
             fi
-            eval "$tar_cmd" | pv -s "$total_size" > "$output" &
+            tar "${tar_args[@]}" | pv -s "$total_size" > "$output" &
         fi
         archive_pid=$!
     else
@@ -1083,21 +1352,25 @@ create_archive() {
         if [ -n "$compression_tool" ]; then
             case "$compression_tool" in
                 bzip2|pbzip2|lbzip2)
-                    tar_cmd="$tar_cmd -j"
+                    tar_args+=("-j")
                     ;;
                 xz|pxz)
-                    tar_cmd="$tar_cmd -J"
+                    tar_args+=("-J")
                     ;;
                 pigz|gzip)
-                    tar_cmd="$tar_cmd -z"
+                    tar_args+=("-z")
                     ;;
             esac
         fi
         
+        # Add output file
+        tar_args+=("-f" "$output")
+        
+        show_command "Creating tar archive" "tar" "${tar_args[@]}"
         if [ -n "$DEBUG" ]; then
-            echo "Debug: executing: $tar_cmd -f $output" >&2
+            echo "Debug: executing: tar ${tar_args[*]}" >&2
         fi
-        eval "$tar_cmd -f $output" &
+        tar "${tar_args[@]}" &
         archive_pid=$!
     fi
     
@@ -1128,13 +1401,26 @@ for file in "${input_files[@]}"; do
     fi
 done
 
-# Calculate total size and file count
+# Apply file filtering for all archive types
+filter_files "${input_files[@]}"
+if [ $? -ne 0 ]; then
+    echo "Error: File filtering failed"
+    exit 1
+fi
+
+# Use filtered files for all operations
+if [ ${#FILTERED_FILES[@]} -eq 0 ]; then
+    echo "Error: No files match the specified patterns."
+    exit 1
+fi
+
+# Calculate total size and file count using filtered files
 total_size=$(calculate_total_size)
 file_count=0
 if [ -n "$DEBUG" ]; then
     echo "Debug: Calculating file count..."
 fi
-for file in "${input_files[@]}"; do
+for file in "${FILTERED_FILES[@]}"; do
     if [ -d "$file" ]; then
         if [ "$no_recurse" = true ]; then
             count=$(find "$file" -maxdepth 1 -type f | wc -l)
@@ -1279,7 +1565,7 @@ fi
 # Show tree view if requested
 if [ "$show_tree" = true ]; then
     echo "📂 File structure:"
-    for file in "${input_files[@]}"; do
+    for file in "${FILTERED_FILES[@]}"; do
         if [ -d "$file" ]; then
             if [ "$no_recurse" = true ]; then
                 find "$file" -maxdepth 1 -type f | sed 's/[^/]*\//  /'
@@ -1361,7 +1647,7 @@ fi
 
 if [ -n "$split_size" ]; then
     split_output_file=$(mktemp)
-    create_split_archive "$output" "$split_size" "${input_files[@]}" > "$split_output_file" &
+    create_split_archive "$output" "$split_size" "${FILTERED_FILES[@]}" > "$split_output_file" &
     archive_pid=$!
     wait $archive_pid
     cat "$split_output_file"
@@ -1372,10 +1658,11 @@ elif [ "$use_7z" = true ]; then
     fi
     start_time=$(date +%s.%N)
     debug_log "Launching 7z with parent PID: $$"
-    cmd_7z=(7z a -mx="$compression_level" "$output" "${input_files[@]}")
+    cmd_7z=(7z a -mx="$compression_level" "$output" "${FILTERED_FILES[@]}")
     if [ -n "$password" ]; then
-        cmd_7z=(7z a -p"$password" -mx="$compression_level" "$output" "${input_files[@]}")
+        cmd_7z=(7z a -p"$password" -mx="$compression_level" "$output" "${FILTERED_FILES[@]}")
     fi
+    show_command "Creating 7z archive" "${cmd_7z[@]}"
     debug_log "7z command: ${cmd_7z[*]} > $sevenz_log 2>&1 &"
     "${cmd_7z[@]}" > "$sevenz_log" 2>&1 &
     archive_pid=$!
@@ -1385,11 +1672,12 @@ elif [ "$use_7z" = true ]; then
 elif [ "$use_zip" = true ]; then
     start_time=$(date +%s.%N)
     debug_log "Launching zip with parent PID: $$"
-    cmd_zip=(zip -e -P "$password" "$output" "${input_files[@]}")
-    if [ -z "$password" ]; then
-        prompt_password
-        cmd_zip=(zip -e -P "$password" "$output" "${input_files[@]}")
+    if [ -n "$password" ]; then
+        cmd_zip=(zip -e -P "$password" "$output" "${FILTERED_FILES[@]}")
+    else
+        cmd_zip=(zip "$output" "${FILTERED_FILES[@]}")
     fi
+    show_command "Creating ZIP archive" "${cmd_zip[@]}"
     debug_log "zip command: ${cmd_zip[*]} > $zip_log 2>&1 &"
     "${cmd_zip[@]}" > "$zip_log" 2>&1 &
     archive_pid=$!
@@ -1397,7 +1685,7 @@ elif [ "$use_zip" = true ]; then
     spinner_with_timer "$archive_pid" "Compressing with zip..."
     end_time=$(date +%s.%N)
 else
-    create_archive "$output" "$compression_tool" "$no_recurse" "${input_files[@]}"
+    create_archive "$output" "$compression_tool" "$no_recurse" "${FILTERED_FILES[@]}"
     archive_status=$?
 fi
 
@@ -1438,6 +1726,7 @@ if [ "${archive_status:-1}" -eq 0 ]; then
             echo "   To verify integrity, first reassemble all parts (e.g., cat $output* > combined.tar.gz) and then run:"
             echo "   gzip -t combined.tar.gz   or   tar -tf combined.tar.gz"
         else
+            show_command "Verifying archive" verify_archive "$output"
             verify_archive "$output"
         fi
     fi
@@ -1455,6 +1744,7 @@ if [ "${archive_status:-1}" -eq 0 ]; then
             
             if [ -n "$recipient" ]; then
                 # Public key encryption
+                show_command "Encrypting with GPG public key" gpg --encrypt --recipient "$recipient" --output "$output" "$original_output"
                 if ! gpg --encrypt --recipient "$recipient" --output "$output" "$original_output"; then
                     echo "Error: Failed to encrypt with GPG public key"
                     exit 1
@@ -1466,6 +1756,7 @@ if [ "${archive_status:-1}" -eq 0 ]; then
                 if [ -z "$password" ]; then
                     prompt_password
                 fi
+                show_command "Encrypting with GPG symmetric" gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$output" "$original_output"
                 if ! gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$output" "$original_output"; then
                     echo "Error: Failed to encrypt with GPG"
                     exit 1
@@ -1477,6 +1768,7 @@ if [ "${archive_status:-1}" -eq 0 ]; then
             if [ -z "$password" ]; then
                 prompt_password
             fi
+            show_command "Encrypting with OpenSSL" openssl enc -aes-256-cbc -salt -pbkdf2 -in "$output" -out "${output}.enc" -pass pass:"$password"
             if ! openssl enc -aes-256-cbc -salt -pbkdf2 -in "$output" -out "${output}.enc" -pass pass:"$password"; then
                 echo "Error: Failed to encrypt with OpenSSL"
                 exit 1
@@ -1489,14 +1781,17 @@ if [ "${archive_status:-1}" -eq 0 ]; then
     # For 7z, verify after creation (with password if set)
     if [ "$verify" = true ] && [ "$use_7z" = true ]; then
         if [ -n "$password" ]; then
+            show_command "Verifying 7z archive with password" 7z t -p"$password" "$output"
             7z t -p"$password" "$output"
         else
+            show_command "Verifying 7z archive" verify_archive "$output"
             verify_archive "$output"
         fi
     fi
 
     # Generate hash if requested
     if [ "$hash_output" = true ]; then
+        show_command "Generating SHA256 hash" shasum -a 256 "$output" ">" "$output.sha256"
         shasum -a 256 "$output" > "$output.sha256"
         echo "🔒 SHA256 hash saved to: $output.sha256"
     fi
@@ -1542,66 +1837,29 @@ if [ "${archive_status:-1}" -eq 0 ]; then
         fi
     fi
 
+    # After archive creation and all processing, before exit 0:
+    if [ "$print_filename" = true ]; then
+        if [ -n "$split_size" ]; then
+            # Output all split part filenames, one per line
+            parts_file="${output}.parts.txt"
+            if [ -f "$parts_file" ]; then
+                awk '{print $1}' "$parts_file"
+            else
+                # Fallback: try to glob
+                for f in "$output"*; do
+                    [ -f "$f" ] && echo "$f"
+                done
+            fi
+        else
+            echo "$output"
+        fi
+        exit 0
+    fi
+
     exit 0
 else
     echo "❌ Compression failed."
     rm -f "$output"
     exit 1
 fi
-
-show_help() {
-  echo "Usage: fancy-tar [options] <files...>"
-  echo ""
-  echo "Options:"
-  echo "  -o, --output <file>    Specify output file name"
-  echo "  -n                     Do not use gzip compression"
-  echo "  -s                     Use slower but better compression"
-  echo "  -x                     Open the output folder when done"
-  echo "  -t, --tree            Show hierarchical file structure before archiving"
-  echo "  --no-recursion|--no-recurse Do not include directory contents (shallow archive)"
-  echo "  --no-prompt           Skip all interactive prompts (use defaults)"
-  echo "  --hash                Output SHA256 hash file alongside the archive"
-  echo "  --encrypt[=method]    Encrypt archive with gpg (default) or openssl"
-  echo "  --recipient <id>      Recipient ID for GPG public key encryption"
-  echo "  --password <pass>     Password to use for encryption (if supported)"
-  echo "  --verify              Verify the archive after creation"
-  echo "  --split-size=<size>   Split the archive into smaller parts (e.g., 100M, 1G)"
-  echo "  --zip                 Create a .zip archive (with optional password)"
-  echo "  --7z                  Create a .7z archive (with optional password)"
-  echo "                       • Uses AES-256 encryption when password is provided"
-  echo "                       • Encrypts both file contents and headers"
-  echo "                       • Supports solid compression"
-  echo "  --compression=<0-9>   Set 7z compression level (0=store, 9=ultra)"
-  echo "                       • 0: Store (no compression)"
-  echo "                       • 1: Fastest"
-  echo "                       • 5: Normal (default)"
-  echo "                       • 9: Ultra (very slow)"
-  echo "  --use=<tool>          Force specific compression tool:"
-  echo "                       • gzip/pigz: Use gzip or parallel gzip"
-  echo "                       • bzip2/pbzip2/lbzip2: Use bzip2 or parallel variants"
-  echo "                       • xz/pxz: Use xz or parallel xz"
-  echo "                       • If not specified, automatically uses parallel tools when available"
-  echo "  --manifest <format>   Generate a manifest file listing the contents of the archive. Formats:"
-  echo "                       • tree: Hierarchical tree view (.txt)"
-  echo "                       • text: Flat list of all files (.txt)"
-  echo "                       • csv: CSV with columns: Path, Compressed Size, Uncompressed Size, Compression Ratio, File Type, Depth, Attributes, Timestamp (.csv)"
-  echo "                       • csvhash: Like csv, but also includes a SHA256 hash per file (.csv)"
-  echo "  -f, --force           Automatically overwrite any existing output file or split parts without prompting"
-  echo "  -h, --help            Show this help message"
-  echo "  --version             Show version information"
-  echo ""
-  echo "Examples:"
-  echo "  fancy-tar file1.txt file2.txt -o archive.tar.gz"
-  echo "  fancy-tar --zip --password secret -o archive.zip folder/"
-  echo "  fancy-tar --7z --compression=9 -o archive.7z large_folder/"
-  echo "  fancy-tar --split-size=100M -o archive.tar.gz huge_folder/"
-  echo "  fancy-tar --verify -o archive.tar.gz important_files/"
-  echo "  fancy-tar --use=gzip -o archive.tar.gz files/"  # Force gzip instead of pigz"
-  echo "  fancy-tar --manifest csvhash -o archive.tar.gz files/"  # Generate CSV with SHA256 hashes"
-  echo ""
-  echo "Note: When using --split-size, the archive will be split into multiple parts"
-  echo "      with the specified size. For example, with --split-size=100M, a 500MB"
-  echo "      archive would be split into 5 parts of 100MB each."
-  exit 0
-}
 

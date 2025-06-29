@@ -20,5 +20,9 @@ _arguments -s \
   '--use=[Force specific compression tool]:tool:(gzip pigz bzip2 pbzip2 lbzip2 xz pxz)' \
   '-f[Automatically overwrite any existing output file or split parts without prompting]' \
   '--force[Automatically overwrite any existing output file or split parts without prompting]' \
-  '--manifest=[Generate a manifest file listing the contents of the archive]:format:(tree text csv csvhash)' \
+  '--manifest[Generate a manifest file]:format:(tree text csv csvhash)' \
+  '--exclude[Exclude files matching pattern]::pattern:_files' \
+  '--include[Include only files matching pattern]::pattern:_files' \
+  '--files-from[Read list of files to include from file]:file:_files' \
+  '--verbose[Show each file being processed with file count display]' \
   '*:files:_files'
