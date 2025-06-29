@@ -248,27 +248,27 @@ Some options are only available with certain compression methods. The table belo
 
 | Option                        | tar/tar.gz | zip  | 7z   |
 |-------------------------------|:----------:|:----:|:----:|
-| <a name="opt-output"></a><kbd>-o</kbd>, <kbd>--output</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-n"></a><kbd>-n</kbd> (no compression)         |    <span style="color:green">✔️</span>      | ❌   | ❌   |
-| <a name="opt-s"></a><kbd>-s</kbd> (slower/better compression) | <span style="color:green">✔️</span>      | ❌   | ❌   |
-| <a name="opt-x"></a><kbd>-x</kbd>, <kbd>--open-after</kbd> (open after)             |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-tree"></a><kbd>-t</kbd>, <kbd>--tree</kbd>                  |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-no-recurse"></a><kbd>--no-recurse</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-hash"></a><kbd>--hash</kbd>                      |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    <span style="color:green">✔️</span>      | ❌   | ❌   |
-| <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    <span style="color:green">✔️</span>      | ❌   | ❌   |
-| <a name="opt-password"></a><kbd>--password</kbd>¹                  |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-verify"></a><kbd>--verify</kbd>                    |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | <span style="color:green">✔️</span>   | ❌   |
-| <a name="opt-7z"></a><kbd>--7z</kbd>                        |    ❌      | ❌   | <span style="color:green">✔️</span>   |
-| <a name="opt-compression"></a><kbd>--compression=&lt;0-9&gt;</kbd>         |    ❌      | ❌   | <span style="color:green">✔️</span>   |
-| <a name="opt-use"></a><kbd>--use=&lt;tool&gt;</kbd>                |    <span style="color:green">✔️</span>²      | ❌   | ❌   |
-| <a name="opt-print-filename"></a><kbd>--print-filename</kbd>            |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
-| <a name="opt-verbose"></a><kbd>--verbose</kbd>                    |    <span style="color:green">✔️</span>      | <span style="color:green">✔️</span>   | <span style="color:green">✔️</span>   |
+| <a name="opt-output"></a><kbd>-o</kbd>, <kbd>--output</kbd>                |    ✅      | ✅   | ✅   |
+| <a name="opt-n"></a><kbd>-n</kbd> (no compression)         |    ✅      | ❌   | ❌   |
+| <a name="opt-s"></a><kbd>-s</kbd> (slower/better compression) | ✅      | ❌   | ❌   |
+| <a name="opt-x"></a><kbd>-x</kbd>, <kbd>--open-after</kbd> (open after)             |    ✅      | ✅   | ✅   |
+| <a name="opt-tree"></a><kbd>-t</kbd>, <kbd>--tree</kbd>                  |    ✅      | ✅   | ✅   |
+| <a name="opt-no-recurse"></a><kbd>--no-recurse</kbd>                |    ✅      | ✅   | ✅   |
+| <a name="opt-hash"></a><kbd>--hash</kbd>                      |    ✅      | ✅   | ✅   |
+| <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    ✅      | ❌   | ❌   |
+| <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | ✅   | ✅   |
+| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    ✅      | ❌   | ❌   |
+| <a name="opt-password"></a><kbd>--password</kbd>¹                  |    ✅      | ✅   | ✅   |
+| <a name="opt-verify"></a><kbd>--verify</kbd>                    |    ✅      | ✅   | ✅   |
+| <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    ✅      | ✅   | ✅   |
+| <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | ✅   | ❌   |
+| <a name="opt-7z"></a><kbd>--7z</kbd>                        |    ❌      | ❌   | ✅   |
+| <a name="opt-compression"></a><kbd>--compression=&lt;0-9&gt;</kbd>         |    ❌      | ❌   | ✅   |
+| <a name="opt-use"></a><kbd>--use=&lt;tool&gt;</kbd>                |    ✅²      | ❌   | ❌   |
+| <a name="opt-print-filename"></a><kbd>--print-filename</kbd>            |    ✅      | ✅   | ✅   |
+| <a name="opt-verbose"></a><kbd>--verbose</kbd>                    |    ✅      | ✅   | ✅   |
 
-<span style="color:green">✔️</span> = Supported  ❌ = Not Supported
+✅ = Supported  ❌ = Not Supported
 
 ¹ <kbd>--password</kbd> for tar/tar.gz is only used with <kbd>--encrypt=gpg</kbd> or <kbd>--encrypt=openssl</kbd>.
 
