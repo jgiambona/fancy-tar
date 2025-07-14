@@ -222,8 +222,9 @@ ftar [options] <files/directories>
 - `--no-recurse`          Do not include directory contents (shallow archive)
 - `--hash`                Output SHA256 hash file alongside the archive
 - `--encrypt[=method]`    Encrypt archive with gpg (default) or openssl
-- `--recipient <id>`      Recipient ID for GPG public key encryption
+- `--recipient <id>`      Recipient ID for GPG public key encryption (can be specified multiple times)
 - `--password <pass>`     Password to use for encryption (if supported)
+- `--key-file <file>`     Read encryption password from file (if supported)
 - `--verify`              Verify the archive after creation (skipped for split archives; see below)
 - `--split-size=<size>`   Split the archive into smaller parts (e.g., 100M, 1G). Prints a summary of all parts and reassembly instructions.
 - `--zip`                 Create a .zip archive (with optional password)
@@ -257,8 +258,9 @@ Some options are only available with certain compression methods. The table belo
 | <a name="opt-hash"></a><kbd>--hash</kbd>                      |    ✅      | ✅   | ✅   |
 | <a name="opt-encrypt"></a><kbd>--encrypt[=gpg\|openssl]</kbd>     |    ✅      | ❌   | ❌   |
 | <a name="opt-encrypt7z"></a><kbd>--encrypt</kbd> (7z/zip password) |    ❌      | ✅   | ✅   |
-| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    ✅      | ❌   | ❌   |
+| <a name="opt-recipient"></a><kbd>--recipient</kbd>                 |    ✅ (multiple)      | ❌   | ❌   |
 | <a name="opt-password"></a><kbd>--password</kbd>¹                  |    ✅      | ✅   | ✅   |
+| <a name="opt-key-file"></a><kbd>--key-file</kbd>²                  |    ✅      | ✅   | ✅   |
 | <a name="opt-verify"></a><kbd>--verify</kbd>                    |    ✅      | ✅   | ✅   |
 | <a name="opt-split-size"></a><kbd>--split-size</kbd>                |    ✅      | ✅   | ✅   |
 | <a name="opt-zip"></a><kbd>--zip</kbd>                       |    ❌      | ✅   | ❌   |
@@ -272,7 +274,7 @@ Some options are only available with certain compression methods. The table belo
 
 ¹ <kbd>--password</kbd> for tar/tar.gz is only used with <kbd>--encrypt=gpg</kbd> or <kbd>--encrypt=openssl</kbd>.
 
-² <kbd>--use</kbd> valid choices: <kbd>gzip</kbd>, <kbd>pigz</kbd>, <kbd>bzip2</kbd>, <kbd>pbzip2</kbd>, <kbd>lbzip2</kbd>, <kbd>xz</kbd>, <kbd>pxz</kbd> (tar/tar.gz only).
+² <kbd>--key-file</kbd> reads the first line of the specified file as the encryption password.
 
 ³ <kbd>--encrypt</kbd> behavior varies by format:
    • For tar/tar.gz: Uses GPG or OpenSSL as specified
@@ -352,10 +354,14 @@ fancy-tar important/ --7z --verify -o verified.7z
 ### Encryption
 ```bash
 # Create GPG-encrypted archive with public key
-fancy-tar secret/ --encrypt=gpg --recipient user@example.com -o secret.tar.gz
+fancy-tar secret/ --encrypt=gpg --recipient user1@example.com --recipient user2@example.com -o secret.tar.gz
+# (Both user1 and user2 can decrypt)
 
 # Create OpenSSL-encrypted archive with password
 fancy-tar private/ --encrypt=openssl --password -o private.tar.gz
+
+# Create encrypted archive using password from file
+fancy-tar secret/ --encrypt=openssl --key-file /path/to/password.txt -o secret.tar.gz
 
 # Create a ZIP archive with native password protection
 fancy-tar sensitive/ --zip --password -o secure.zip
@@ -396,6 +402,7 @@ fancy-tar sensitive/ --7z --encrypt -o secure.7z
 **Password Prompting:**
 - If no password is provided when encryption is requested, the script will prompt interactively
 - In non-interactive mode, a default password is used for automation
+- Use <kbd>--key-file</kbd> to read passwords from files (useful for automation)
 
 ### Split Archives
 ```bash

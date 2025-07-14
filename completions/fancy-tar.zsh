@@ -11,8 +11,9 @@ _arguments -s \
   '--no-recursion[Do not include directory contents]' \
   '--hash[Output SHA256 hash file alongside the archive]' \
   '--encrypt=[Encrypt archive with gpg or openssl]:method:(gpg openssl)' \
-  '--recipient=[Recipient ID for GPG public key encryption]:recipient:' \
+  '--recipient=[Recipient ID for GPG public key encryption (can be specified multiple times)]:recipient:' \
   '--password=[Password to use for encryption]:password:' \
+  '--key-file=[Read encryption password from file]:file:_files' \
   '--zip[Create a .zip archive]' \
   '--print-filename[Output only the final archive filename]' \
   '--version[Show version information]' \

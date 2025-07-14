@@ -6,8 +6,9 @@ complete -c fancy-tar -s t -l tree -d 'Show hierarchical file structure before a
 complete -c fancy-tar -l no-recursion -d 'Do not include directory contents'
 complete -c fancy-tar -l hash -d 'Output SHA256 hash file alongside the archive'
 complete -c fancy-tar -l encrypt -d 'Encrypt archive with gpg or openssl' -r -a "gpg openssl"
-complete -c fancy-tar -l recipient -d 'Recipient ID for GPG public key encryption' -r
+complete -c fancy-tar -l recipient -d 'Recipient ID for GPG public key encryption (can be specified multiple times)' -r
 complete -c fancy-tar -l password -d 'Password to use for encryption' -r
+complete -c fancy-tar -l key-file -d 'Read encryption password from file' -r -a "(ls)"
 complete -c fancy-tar -l zip -d 'Create a .zip archive'
 complete -c fancy-tar -l print-filename -d 'Output only the final archive filename'
 complete -c fancy-tar -l version -d 'Show version information'
@@ -29,8 +30,9 @@ complete -c fancytar -s t -l tree -d 'Show hierarchical file structure before ar
 complete -c fancytar -l no-recursion -d 'Do not include directory contents'
 complete -c fancytar -l hash -d 'Output SHA256 hash file alongside the archive'
 complete -c fancytar -l encrypt -d 'Encrypt archive with gpg or openssl' -r -a "gpg openssl"
-complete -c fancytar -l recipient -d 'Recipient ID for GPG public key encryption' -r
+complete -c fancytar -l recipient -d 'Recipient ID for GPG public key encryption (can be specified multiple times)' -r
 complete -c fancytar -l password -d 'Password to use for encryption' -r
+complete -c fancytar -l key-file -d 'Read encryption password from file' -r -a "(ls)"
 complete -c fancytar -l zip -d 'Create a .zip archive'
 complete -c fancytar -l print-filename -d 'Output only the final archive filename'
 complete -c fancytar -l version -d 'Show version information'
@@ -50,8 +52,9 @@ complete -c ftar -s t -l tree -d 'Show hierarchical file structure before archiv
 complete -c ftar -l no-recursion -d 'Do not include directory contents'
 complete -c ftar -l hash -d 'Output SHA256 hash file alongside the archive'
 complete -c ftar -l encrypt -d 'Encrypt archive with gpg or openssl' -r -a "gpg openssl"
-complete -c ftar -l recipient -d 'Recipient ID for GPG public key encryption' -r
+complete -c ftar -l recipient -d 'Recipient ID for GPG public key encryption (can be specified multiple times)' -r
 complete -c ftar -l password -d 'Password to use for encryption' -r
+complete -c ftar -l key-file -d 'Read encryption password from file' -r -a "(ls)"
 complete -c ftar -l zip -d 'Create a .zip archive'
 complete -c ftar -l print-filename -d 'Output only the final archive filename'
 complete -c ftar -l version -d 'Show version information'

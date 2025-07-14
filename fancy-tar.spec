@@ -1,5 +1,5 @@
 Name:           fancy-tar
-Version:        1.8.3
+Version:        1.8.4
 Release:        1%{?dist}
 Summary:        A modern tar wrapper with progress bars and encryption
 

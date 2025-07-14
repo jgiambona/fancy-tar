@@ -8,8 +8,4 @@ This document tracks features and improvements to consider and/or implement for 
      - Support for all encryption methods
      - Password and key file decryption
      - Progress reporting during decryption
-
-## Security and Encryption
-
-2. **Security Enhancements**
-    - Add key file support for encryption
+  - Users: Pleas provide feedback on whether you feel like is useful for you; otherwise, I may decide not to implement this, so as to avoid unnecssary complexity in this project.

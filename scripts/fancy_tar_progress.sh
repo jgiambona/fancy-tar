@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.8.3"
+VERSION="1.8.4"
 
 # Pre-scan for --debug flag to enable debug output as early as possible
 for arg in "$@"; do
@@ -23,8 +23,9 @@ show_help() {
   echo "  --no-prompt           Skip all interactive prompts (use defaults)"
   echo "  --hash                Output SHA256 hash file alongside the archive"
   echo "  --encrypt[=method]    Encrypt archive with gpg (default) or openssl"
-  echo "  --recipient <id>      Recipient ID for GPG public key encryption"
+  echo "  --recipient <id>      Recipient ID for GPG public key encryption (can be specified multiple times)"
   echo "  --password <pass>     Password to use for encryption (if supported)"
+  echo "  --key-file <file>     Read encryption password from file (if supported)"
   echo "  --verify              Verify the archive after creation"
   echo "  --split-size=<size>   Split the archive into smaller parts (e.g., 100M, 1G)"
   echo "  --zip                 Create a .zip archive (with optional password)"
@@ -478,6 +479,7 @@ use_7z=false
 no_recurse=false
 show_tree=false
 password=""
+key_file=""
 verify=false
 split_size=""
 compression_level="5"  # Default 7z compression level (0-9)
@@ -642,6 +644,7 @@ include_patterns=()
 files_from=""
 
 # Parse command line arguments
+recipients=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
         --compression=*)
@@ -700,6 +703,18 @@ while [[ $# -gt 0 ]]; do
             password="$2"
             shift 2
             ;;
+        --key-file)
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --key-file requires a file path"
+                exit 1
+            fi
+            key_file="$2"
+            shift 2
+            ;;
+        --key-file=*)
+            key_file="${1#*=}"
+            shift
+            ;;
         --verify)
             verify=true
             shift
@@ -721,7 +736,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --recipient)
-            recipient="$2"
+            if [[ -z "$2" || "$2" == -* ]]; then
+                echo "Error: --recipient requires a value"
+                exit 1
+            fi
+            recipients+=("$2")
             shift 2
             ;;
         --use=*)
@@ -1488,6 +1507,34 @@ prompt_password() {
     done
 }
 
+# Function to read password from key file
+read_key_file() {
+    local file="$1"
+    if [ ! -f "$file" ]; then
+        echo "Error: Key file '$file' does not exist"
+        exit 1
+    fi
+    if [ ! -r "$file" ]; then
+        echo "Error: Key file '$file' is not readable"
+        exit 1
+    fi
+    # Read the first line and strip whitespace
+    password=$(head -n 1 "$file" | tr -d '\r\n\t ')
+    if [ -z "$password" ]; then
+        echo "Error: Key file '$file' is empty or contains only whitespace"
+        exit 1
+    fi
+    echo "🔑 Using password from key file: $file"
+}
+
+# Handle key file if specified
+if [ -n "$key_file" ]; then
+    if [ -n "$password" ]; then
+        echo "Warning: Both --password and --key-file specified, using key file"
+    fi
+    read_key_file "$key_file"
+fi
+
 # Replace all interactive password prompts with prompt_password
 # For GPG/OpenSSL/7z interactive password entry, use prompt_password
 # In the summary, display the correct encryption method
@@ -1737,32 +1784,51 @@ if [ "${archive_status:-1}" -eq 0 ]; then
         if [ "$encrypt_method" = "gpg" ]; then
             # Store original output name
             original_output="$output"
-            # Only append .gpg if not already present
-            if [[ "$output" != *.gpg ]]; then
-              output="${output}.gpg"
+            # Determine final GPG output name
+            if [[ "$output" == *.gpg ]]; then
+                # Output already has .gpg extension, use as-is
+                gpg_output="$output"
+                # Create temporary name for the archive before encryption
+                temp_output="${output%.gpg}.tmp"
+                # Move the archive to temporary name
+                mv "$output" "$temp_output"
+                original_output="$temp_output"
+            else
+                # Add .gpg extension
+                gpg_output="${output}.gpg"
             fi
             
-            if [ -n "$recipient" ]; then
-                # Public key encryption
-                show_command "Encrypting with GPG public key" gpg --encrypt --recipient "$recipient" --output "$output" "$original_output"
-                if ! gpg --encrypt --recipient "$recipient" --output "$output" "$original_output"; then
-                    echo "Error: Failed to encrypt with GPG public key"
+            if [ ${#recipients[@]} -gt 0 ]; then
+                # Public key encryption (multiple recipients supported)
+                gpg_args=(--encrypt)
+                for r in "${recipients[@]}"; do
+                    gpg_args+=(--recipient "$r")
+                done
+                gpg_args+=(--output "$gpg_output" "$original_output")
+                show_command "Encrypting with GPG public key(s)" gpg "${gpg_args[@]}"
+                # shellcheck disable=SC2068
+                if ! eval gpg ${gpg_args[@]}; then
+                    echo "Error: Failed to encrypt with GPG public key(s)"
                     exit 1
                 fi
                 # Remove original file
                 rm "$original_output"
+                # Update output variable to final name
+                output="$gpg_output"
             else
                 # Symmetric encryption
                 if [ -z "$password" ]; then
                     prompt_password
                 fi
-                show_command "Encrypting with GPG symmetric" gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$output" "$original_output"
-                if ! gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$output" "$original_output"; then
+                show_command "Encrypting with GPG symmetric" gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$gpg_output" "$original_output"
+                if ! gpg --symmetric --cipher-algo AES256 --batch --passphrase "$password" --output "$gpg_output" "$original_output"; then
                     echo "Error: Failed to encrypt with GPG"
                     exit 1
                 fi
                 # Remove original file
                 rm "$original_output"
+                # Update output variable to final name
+                output="$gpg_output"
             fi
         elif [ "$encrypt_method" = "openssl" ]; then
             if [ -z "$password" ]; then

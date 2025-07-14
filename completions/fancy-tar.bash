@@ -3,7 +3,7 @@ _fancy_tar() {
   local cur prev opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  opts="-o -n -s -x -t --tree --no-recursion --hash --encrypt= --recipient --password --zip --version --help --print-filename --force -f --verbose"
+  opts="-o -n -s -x -t --tree --no-recursion --hash --encrypt= --recipient --password --key-file --zip --version --help --print-filename --force -f --verbose"
 
   COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
 
@@ -32,6 +32,7 @@ _fancy_tar() {
       ;;
     --recipient=*)
       COMPREPLY=($(compgen -W "$(gpg --list-keys --with-colons | awk -F: '/^pub:/ {print $5}')" -- "${cur#*=}"))
+      # Can be specified multiple times
       return
       ;;
     --password=*)
@@ -59,9 +60,18 @@ _fancy_tar() {
       ;;
     --recipient)
       COMPREPLY=($(compgen -W "$(gpg --list-keys --with-colons | awk -F: '/^pub:/ {print $5}')" -- "$cur"))
+      # Can be specified multiple times
       return
       ;;
     --password)
+      return
+      ;;
+    --key-file=*)
+      _filedir
+      return
+      ;;
+    --key-file)
+      _filedir
       return
       ;;
     --help|-h)
@@ -122,7 +132,7 @@ _fancy_tar() {
       return
       ;;
     -*)
-      COMPREPLY=($(compgen -W "--output -o --compression --use --split-size --encrypt --recipient --password --help -h --version -v --self-test --tree -t --no-recurse --hash --verify --zip --7z --force -f --verbose" -- "$cur"))
+      COMPREPLY=($(compgen -W "--output -o --compression --use --split-size --encrypt --recipient --password --key-file --help -h --version -v --self-test --tree -t --no-recurse --hash --verify --zip --7z --force -f --verbose" -- "$cur"))
       return
       ;;
   esac

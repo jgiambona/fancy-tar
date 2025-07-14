@@ -1,4 +1,4 @@
-.TH FANCY-TAR 1 "2024-12-19" "1.8.3" "1.8.3"
+.TH FANCY-TAR 1 "2024-12-19" "1.8.4" "1.8.4"
 .SH NAME
 fancy-tar, fancytar, ftar \- A modern, feature-rich tar wrapper with progress bars and encryption
 .SH SYNOPSIS
@@ -79,10 +79,16 @@ Encrypt archive. Behavior varies by format:
   • zip: Create zip, then encrypt with GPG (.zip.gpg)
 .TP
 .B \-\-recipient <id>
-Recipient ID for GPG public key encryption
+Recipient ID for GPG public key encryption (can be specified multiple times for multiple recipients)
 .TP
 .B \-\-password <pass>
 Password for encryption. Behavior varies by format:
+  • tar/tar.gz: Used with --encrypt=gpg or --encrypt=openssl
+  • 7z: Uses built-in AES-256 encryption
+  • zip: Uses native password protection (built into zip file)
+.TP
+.B \-\-key-file <file>
+Read encryption password from the first line of the specified file. Behavior varies by format:
   • tar/tar.gz: Used with --encrypt=gpg or --encrypt=openssl
   • 7z: Uses built-in AES-256 encryption
   • zip: Uses native password protection (built into zip file)
@@ -174,9 +180,17 @@ Encrypt using GPG (symmetric):
 .B
 fancy-tar 1.8.0folder --encrypt=gpg
 .TP
+Encrypt with GPG for multiple recipients:
+.B
+fancy-tar secret/ --encrypt=gpg --recipient user1@example.com --recipient user2@example.com -o secret.tar.gz
+.TP
 Encrypt with OpenSSL:
 .B
 fancy-tar 1.8.0folder --encrypt=openssl --password secret
+.TP
+Encrypt with password from file:
+.B
+fancy-tar secret/ --encrypt=openssl --key-file /path/to/password.txt -o secret.tar.gz
 .TP
 ZIP archive with native password protection:
 .B

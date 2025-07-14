@@ -1,7 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [1.8.4] - 2025-07-14
 
+### Added
+- Support for multiple --recipient arguments for GPG encryption. You can now specify --recipient multiple times to encrypt for multiple public keys.
+- Support for --key-file option to read encryption passwords from files. Useful for automation and avoiding password prompts.
 
 ## [1.8.3] - 2025-07-01
 
