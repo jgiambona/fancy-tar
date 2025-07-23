@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.8.5] - 2025-07-23
+
+### Fixed
+- Robustly parse tar -tvf output for manifest CSV generation, ensuring correct extraction of file size, date, and filenames (including those with spaces). This resolves issues where manifest columns were misaligned or contained incorrect user/group data.
+
 ## [1.8.4] - 2025-07-14
 
 ### Added

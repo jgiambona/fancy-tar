@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION="1.8.4"
+VERSION="1.8.5"
 
 # Pre-scan for --debug flag to enable debug output as early as possible
 for arg in "$@"; do
@@ -587,9 +587,10 @@ write_manifest() {
             else
                 local line=$(tar -tvf "$archive" "$f" 2>/dev/null | head -n1)
                 attr=$(echo "$line" | awk '{print $1}')
-                usize=$(echo "$line" | awk '{print $3}')
-                date=$(echo "$line" | awk '{print $4}')
-                time=$(echo "$line" | awk '{print $5}')
+                usize=$(echo "$line" | awk '{print $5}')
+                date=$(echo "$line" | awk '{print $6 " " $7 " " $8}')
+                # Extract filename robustly (handles spaces)
+                filename=$(echo "$line" | awk '{for(i=9;i<=NF;++i) printf $i (i<NF?" ":"\\n")}')
                 csize="N/A"; ratio="N/A"
             fi
             # Replace commas in attr with semicolons
@@ -603,7 +604,14 @@ write_manifest() {
                     sha256=$(tar -xOf "$archive" "$f" 2>/dev/null | get_sha256)
                 fi
             fi
-            local row="$f,$csize,$usize,$ratio,$type,$depth,$attr,$date $time"
+
+            # Use robust filename for tar, otherwise $f
+            if [[ "$archive" == *.tar* || "$archive" == *.tgz || "$archive" == *.tar.gz ]]; then
+                row="$filename,$csize,$usize,$ratio,$type,$depth,$attr,$date"
+            else
+                row="$f,$csize,$usize,$ratio,$type,$depth,$attr,$date $time"
+            fi
+
             [[ "$format" == "csvhash" ]] && row="$row,$sha256"
             echo "$row" >> "$manifest_file"
         done

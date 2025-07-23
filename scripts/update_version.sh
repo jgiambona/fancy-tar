@@ -42,8 +42,14 @@ fi
 
 # Update docs/fancy-tar.1 if it exists
 if [ -f docs/fancy-tar.1 ]; then
+    # Update the .TH line as before
     sed -i '' "s/\.TH FANCY-TAR 1 \"[^\"]*\" \"[^\"]*\" \"fancy-tar [0-9.]*\"/.TH FANCY-TAR 1 \"$(date +%Y-%m-%d)\" \"$VERSION\" \"fancy-tar $VERSION\"/" docs/fancy-tar.1
-    echo "✓ Updated docs/fancy-tar.1"
+    # Update all usage examples and the VERSION section to the new version
+    # This will match e.g. 'fancy-tar 1.8.5' and 'fancy-tar 1.8.5folder' and 'fancy-tar 1.8.5--files-from'
+    sed -i '' -E "s/(fancy-tar )([0-9]+\.[0-9]+\.[0-9]+)/\\1$VERSION/g" docs/fancy-tar.1
+    # Update the VERSION section (e.g. 'fancy-tar 1.8.5' on its own line)
+    sed -i '' -E "s/^(fancy-tar )[0-9]+\.[0-9]+\.[0-9]+/\\1$VERSION/" docs/fancy-tar.1
+    echo "✓ Updated docs/fancy-tar.1 (all version numbers)"
 fi
 
 # Update scripts/fancy_tar_progress.sh
